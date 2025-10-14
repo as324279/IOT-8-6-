@@ -21,16 +21,13 @@ const FirstScreen =  () => {
             </Pressable>
             
 
-            <Pressable style  = { [styles.Button,styles.signButton] }>
+            <Pressable style  = { [styles.Button,styles.signButton]} onPress = {() => router.push('./(auth)/signupScreen')}>
                 <Text style = {styles.ButtonText}>회원가입</Text>
             </Pressable>
 
 
 
         </View>
-
-    
-
     )
 
     

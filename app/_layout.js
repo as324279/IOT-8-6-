@@ -11,6 +11,14 @@ export default function AuthLayout() {
           title: 'Welcome'
         }}
       />
+
+      <Stack.Screen 
+        name="(auth)" 
+        options={{
+          headerShown: false, // 헤더 숨기기 (이미지처럼 깨끗한 화면)
+          title: ''
+        }}
+      />
       
       
     </Stack>
