@@ -16,7 +16,7 @@ const FirstScreen =  () => {
             />
             
 
-            <Pressable style = { [styles.Button,styles.loginButton] }>
+            <Pressable style = { [styles.Button,styles.loginButton] } onPress = {()=>router.push('./(auth)/login')}>
                 <Text style = {styles.ButtonText}>로그인</Text>
             </Pressable>
             

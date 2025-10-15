@@ -2,22 +2,19 @@ import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, Pressable, ImageBackground, TextInput, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Checkbox } from 'react-native-paper';
 
-const EmailScreen = () => {
+
+const LoginScreen = () => {
 
     const router = useRouter();
 
     const [password, setPassword] = useState('');
-    const [passwordcheck, setPasswordcheck] = useState('');
     const [showpassword, setShowpassword] = useState(false);
-    const [showpasswordcheck, setShowpasswordcheck] = useState(false);
-    const [togglebox,setTogglebox] = useState(false);
-    const [togglebox2, setTogglebox2] = useState(false);
+    
 
     return(
         <View style = {styles.container}>
-            <Text style = {styles.HeaderText}>반갑습니다. 이메일과 비밀번호를 입력해주세요!</Text>
+            <Text style = {styles.HeaderText}>로그인해주세요!</Text>
 
             <TextInput style = {styles.input} 
             placeholder='Email을 입력해주세요.'
@@ -37,46 +34,16 @@ const EmailScreen = () => {
             </TouchableOpacity>
             
             </View>
-            
 
-           <View style = {styles.passwordContainer}>
-             <TextInput style = {styles.passwordInput} placeholder='비밀번호를 다시 입력해주세요'
-            value = {passwordcheck}
-            secureTextEntry = {!showpasswordcheck}
-            onChangeText={setPasswordcheck}
-            />
-            <TouchableOpacity onPress={() => setShowpasswordcheck(!showpasswordcheck)}>
-                <Ionicons name = {showpasswordcheck ? 'eye-off' : 'eye'}
-                    size = {20} color = 'gray'></Ionicons>
-            </TouchableOpacity>
-            
-           </View>
-            
-            <View style = {{flexDirection : 'row',alignItems:'center'}}>
-                <Checkbox
-                status = {togglebox ? 'checked': 'unchecked'}
-                onPress = {() => setTogglebox(!togglebox)}
-                color = "#7DBCE9"/>
-                <Text style = {{marginLeft:8}}>서비스 이용약관 관련 전체 동의</Text>
-            </View>
-
-            <View style = {{flexDirection : 'row',alignItems:'center'}}>
-                <Checkbox
-                status = {togglebox2 ? 'checked': 'unchecked'}
-                onPress = {() => setTogglebox2(!togglebox2)}
-                color = "#7DBCE9"/>
-                <Text style = {{marginLeft:8}}>개인정보 약관 전체 동의</Text>
-            </View>
-
-            <Pressable style = {styles.Button} onPress = {()=> router.push('checkScreen')}>
-                <Text style = {styles.nextButton}>다음</Text>
+            <Pressable style = {styles.Button} onPress = {()=> router.push('../mainHome')}>
+                <Text style = {styles.nextButton}>로그인</Text>
             </Pressable>
 
 
         </View>
     )
 }
-export default EmailScreen;
+export default LoginScreen;
 
 const styles  = StyleSheet.create({
     container:{
