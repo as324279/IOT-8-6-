@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, Pressable, ImageBackground, TextInput, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 
 const LoginScreen = () => {
 
     const router = useRouter();
-
+    const navigation = useNavigation();
     const [password, setPassword] = useState('');
     const [showpassword, setShowpassword] = useState(false);
+
     
 
     return(
@@ -35,7 +37,7 @@ const LoginScreen = () => {
             
             </View>
 
-            <Pressable style = {styles.Button} onPress = {()=> router.push('../mainHome')}>
+            <Pressable style = {styles.Button} onPress = {()=> router.push('../(tabs)/mainHome')}>
                 <Text style = {styles.nextButton}>로그인</Text>
             </Pressable>
 

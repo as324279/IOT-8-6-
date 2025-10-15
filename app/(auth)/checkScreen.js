@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, Pressable, ImageBackground, TextInput, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 const CheckScreen = () => {
     const router = useRouter();
@@ -16,7 +14,7 @@ const CheckScreen = () => {
 
             <Text style = {styles.checkText}>인증 메일을 보냈어요</Text>
 
-            <Pressable style = {styles.Button} onPress = {() => router.push('../mainHome')}>
+            <Pressable style = {styles.Button} onPress = {() => router.push('../(tabs)/mainHome')}>
                 <Text style = {styles.nextButton}>다음</Text>
             </Pressable>
         </View>

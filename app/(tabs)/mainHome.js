@@ -1,20 +1,19 @@
-import { FontAwesome5, Fontisto, Ionicons } from '@expo/vector-icons';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useNavigation } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 const MainHome = ()=>{
     const router = useRouter();
-    const BottomTab  = createBottomTabNavigator();
+    const navigation = useNavigation();
     
     return (
         <View style = {styles.container}>
             {/* 채움 헤더 부분*/}
-            <View style = {styles.header}>
+            {/* <View style = {styles.header}>
                 <View style = {styles.headerContainer}></View>
                 <Text style = {styles.headerText}>채움</Text>
                 <Ionicons name = "notifications-outline" size = {20} color = "black" style = {styles.icon}/>
-            </View> 
+            </View>  */}
 
             <Pressable style = { [styles.Button,styles.groupButton] } >
                 <Text style = {styles.ButtonText}>새로운 그룹 생성</Text>
@@ -24,13 +23,9 @@ const MainHome = ()=>{
             <Pressable style  = { [styles.Button,styles.codeButton]} >
                 <Text style = {styles.ButtonText}>초대코드로 입장하기</Text>
             </Pressable>
-
-            {/* 하단 탭바*/}
-            <View style = {styles.BottomTab}>
-                <Ionicons name = "home-outline" size = {20} color = "black"/>
-                <Fontisto name = "shopping-basket" size = {20} color = "black"/>
-                <FontAwesome5 name = "user-circle" size = {20} color = "black"/>
-            </View>
+            
+        
+            
         </View>
     )
 }
@@ -79,12 +74,22 @@ const styles = StyleSheet.create({
 
     groupButton: {backgroundColor: '#5DADE2',},
 
-    BottomTab: {flexDirection: 'row',
+    BottomTab: {
+        flexDirection: 'row',
     justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 70,
+    paddingVertical: 10,
     borderTopWidth: 1,
-    borderColor: '#ddd',
-    backgroundColor: 'white',},
-
+    borderTopColor: '#ddd',
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    backgroundColor: '#fff',
+    },
+    BottomtabButton:{
+        alignContent:'center'
+    },
+    BottomText:{
+        fontSize: 12,
+        textAlign: 'center'
+    },
 });
