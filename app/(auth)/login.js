@@ -20,6 +20,7 @@ const LoginScreen = () => {
 
             <TextInput style = {styles.input} 
             placeholder='Email을 입력해주세요.'
+            placeholderTextColor={'#000000'}
             
             />
 
@@ -29,6 +30,7 @@ const LoginScreen = () => {
             value = {password}
             secureTextEntry = {!showpassword}
             onChangeText={setPassword}
+            placeholderTextColor={'#000000'}
             />
             <TouchableOpacity onPress = {() => setShowpassword(!showpassword)}>
                 <Ionicons name = {showpassword ? 'eye-off': 'eye'}
