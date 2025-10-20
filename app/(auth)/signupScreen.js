@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, Pressable, ImageBackground, TextInput, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Checkbox } from 'react-native-paper';
 
 const EmailScreen = () => {
@@ -21,12 +21,18 @@ const EmailScreen = () => {
 
             <TextInput style = {styles.input} 
             placeholder='Email을 입력해주세요.'
-            
+            placeholderTextColor={'#000000'}
+            />
+
+            <TextInput style = {styles.input} 
+            placeholder='닉네임을 입력해주세요.'
+            placeholderTextColor={'#000000'}
             />
 
             <View style = {styles.passwordContainer}>
                 <TextInput style = {styles.passwordInput} 
             placeholder='비밀번호를 입력해주세요'
+            placeholderTextColor={'#000000'}
             value = {password}
             secureTextEntry = {!showpassword}
             onChangeText={setPassword}
@@ -42,6 +48,7 @@ const EmailScreen = () => {
            <View style = {styles.passwordContainer}>
              <TextInput style = {styles.passwordInput} placeholder='비밀번호를 다시 입력해주세요'
             value = {passwordcheck}
+            placeholderTextColor={'#000000'}
             secureTextEntry = {!showpasswordcheck}
             onChangeText={setPasswordcheck}
             />
@@ -113,9 +120,6 @@ const styles  = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  checkbox: {},
-
-
     Button:{width: '100%',
         height: 50,
         backgroundColor: '#7DBCE9', // 이미지의 파란색 계열 버튼
