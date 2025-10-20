@@ -5,9 +5,9 @@ export default function AuthLayout() {
     <Stack>
       
       <Stack.Screen 
-        name="index" // FirstScreen 파일명(index.js)에 해당
+        name="index" 
         options={{
-          headerShown: false, // 헤더 숨기기 (이미지처럼 깨끗한 화면)
+          headerShown: false, 
           title: 'Welcome'
         }}
       />
@@ -15,7 +15,7 @@ export default function AuthLayout() {
       <Stack.Screen 
         name="(auth)" 
         options={{
-          headerShown: false, // 헤더 숨기기 (이미지처럼 깨끗한 화면)
+          headerShown: false, 
           title: ''
         }}
       />
@@ -23,7 +23,15 @@ export default function AuthLayout() {
       <Stack.Screen 
         name="mainHome" 
         options={{
-          headerShown: false, // 헤더 숨기기 (이미지처럼 깨끗한 화면)
+          headerShown: false,
+          title: ''
+        }}
+      />
+
+    <Stack.Screen 
+        name="(tabs)" 
+        options={{
+          headerShown: false,
           title: ''
         }}
       />
