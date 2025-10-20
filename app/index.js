@@ -51,6 +51,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginVertical: 8,
+        marginTop:200,    
+    },
+    Button1: {
+        width: '100%', // 너비 최대화
+        height: 50,
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginVertical: 8,
         marginTop:30,    
     },
     ButtonText:{color: 'white',
