@@ -10,14 +10,14 @@ const FirstScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* ✅ 반응형 로고 */}
+        -
         <Image
           source={require('../assets/images/projectlogo.png')}
           style={styles.logo}
           resizeMode="contain"
         />
 
-        {/* ✅ 로그인 버튼 */}
+        -
         <Pressable
           style={[styles.Button, styles.loginButton]}
           onPress={() => router.push('./(auth)/login')}
@@ -25,7 +25,7 @@ const FirstScreen = () => {
           <Text style={styles.ButtonText}>로그인</Text>
         </Pressable>
 
-        {/* ✅ 회원가입 버튼 */}
+        -
         <Pressable
           style={[styles.Button, styles.signButton]}
           onPress={() => router.push('./(auth)/signupScreen')}
