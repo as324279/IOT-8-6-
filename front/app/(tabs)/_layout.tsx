@@ -39,6 +39,10 @@ export default function TabsLayout() {
           ),
         }}
       />
+
+      
+      <Tabs.Screen name="ReceiptOCR"options={{ href: null }} />
+     
     </Tabs>
   );
 }

@@ -1,74 +1,73 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet, Pressable, ImageBackground } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Dimensions, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const FirstScreen =  () => {
-    const router = useRouter();
+const { width, height } = Dimensions.get('window');
 
+const FirstScreen = () => {
+  const router = useRouter();
 
-    return (
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        -
+        <Image
+          source={require('../assets/images/projectlogo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
 
-        <View style = {styles.container}>
-            <Image
-                source = {require('../assets/images/projectlogo.png')}
-                style = {styles.logo}
-                resizMode = "contain"
-            />
-            
+        -
+        <Pressable
+          style={[styles.Button, styles.loginButton]}
+          onPress={() => router.push('./(auth)/login')}
+        >
+          <Text style={styles.ButtonText}>로그인</Text>
+        </Pressable>
 
-            <Pressable style = { [styles.Button,styles.loginButton] } onPress = {()=>router.push('./(auth)/login')}>
-                <Text style = {styles.ButtonText}>로그인</Text>
-            </Pressable>
-            
+        -
+        <Pressable
+          style={[styles.Button, styles.signButton]}
+          onPress={() => router.push('./(auth)/signupScreen')}
+        >
+          <Text style={styles.ButtonText}>회원가입</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
+  );
+};
 
-            <Pressable style  = { [styles.Button,styles.signButton]} onPress = {() => router.push('./(auth)/signupScreen')}>
-                <Text style = {styles.ButtonText}>회원가입</Text>
-            </Pressable>
-
-
-
-        </View>
-    )
-
-    
-
-}
 export default FirstScreen;
 
 const styles = StyleSheet.create({
-
-    container: {
-        flex: 1,
-        backgroundColor: 'white', // 배경색
-        alignItems: 'center', // 가로 중앙 정렬
-        paddingTop: 80, // 상단 여백
-        paddingHorizontal: 20,
-    },
-    Button: {
-        width: '100%', // 너비 최대화
-        height: 50,
-        borderRadius: 8,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginVertical: 8,
-        marginTop:200,    
-    },
-    Button1: {
-        width: '100%', // 너비 최대화
-        height: 50,
-        borderRadius: 8,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginVertical: 8,
-        marginTop:30,    
-    },
-    ButtonText:{color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',},
-    loginButton: {backgroundColor: '#9CCC65',},
-    signButton: {backgroundColor: '#5DADE2',},
-    logo: {width: 140,
-    height: 140,
-    marginBottom: 24,}
+  safeArea: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center', 
+    paddingHorizontal: width * 0.1, 
+  },
+  logo: {
+    width: width * 0.4, 
+    height: height * 0.2, 
+    marginBottom: height * 0.05, 
+  },
+  Button: {
+    width: '100%',
+    height: height * 0.050, 
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: height * 0.015, 
+  },
+  ButtonText: {
+    color: 'white',
+    fontSize: width * 0.045, 
+    fontWeight: 'bold',
+  },
+  loginButton: { backgroundColor: '#9CCC65' },
+  signButton: { backgroundColor: '#5DADE2' },
 });
-    

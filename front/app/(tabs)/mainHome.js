@@ -1,68 +1,51 @@
-import { useRouter } from 'expo-router'; // [수정] useNavigation import 삭제
+import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import TopHeader from '../../components/TopHeader';
+import TopHeader from '../../components/Header';
 
 const MainHome = ()=>{
     const router = useRouter();
-    // [삭제] const navigation = useNavigation();
+    const navigation = useNavigation();
     
     return (
-        <SafeAreaView  edges={['top']}>
+        
+         <SafeAreaView style={styles.safeArea} edges={['top']}>
+        
             <TopHeader 
-            title="채움" 
             showBack={false}
             showIcons={true}
-        />
+            title="채움"
+            />
             
-
-            <Pressable style = { [styles.Button,styles.groupButton] } >
+            <Pressable style = { [styles.Button,styles.groupButton] } onPress={() => OpenModal('create')} >
                 <Text style = {styles.ButtonText}>새로운 그룹 생성</Text>
             </Pressable>
                         
             
-            <Pressable style  = { [styles.Button1,styles.codeButton]} >
+            <Pressable style  = { [styles.Button2,styles.codeButton]} onPress={() => OpenModal('invite')} >
                 <Text style = {styles.ButtonText}>초대코드로 입장하기</Text>
             </Pressable>
 
-            {/* [수정] 경로를 `./RecieptOCR`에서 `../RecieptOCR` 또는 절대 경로로 수정 필요할 수 있음 */}
-            <Pressable style  = { [styles.Button2,styles.codeButton]} onPress={() => router.push('../RecieptOCR')}>
+            <Pressable style  = { [styles.Button2,styles.codeButton]} onPress={() => router.push('./ReceiptOCR')}>
                 <Text style={styles.ButtonText}>영수증 인식</Text>
             </Pressable>
             
         
             
-            
         </SafeAreaView>
+        
     )
 }
 export default MainHome;
 
 // ... styles 는 기존과 동일 ...
 const styles = StyleSheet.create({
-    SafeAreaView:{flex: 1,
-        backgroundColor: 'white', 
-        alignItems: 'center', 
-        paddingTop: 80, 
-        paddingHorizontal: 20,},
+    safeArea: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    alignItems: 'center',},
     
-    header : {
-    height: 80,
-    backgroundColor: '#5DADE2',
-    alignItems: 'center',
-    justifyContent: 'center',
-    },
-
-    headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',},
-
-    headerText: {fontSize: 22,
-    fontWeight: 'bold',
-    color: 'black',
-    marginRight:5},
-
     icon: {
         color: 'black'
     },
@@ -73,31 +56,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginVertical: 8,
-        marginTop:150,    
-        marginHorizontal:50
+        marginTop:300,
     },
-
-    Button1: {
-        width: '70%', 
+    Button2:{width: '70%', 
         height: 50,
         borderRadius: 8,
         justifyContent: 'center',
         alignItems: 'center',
         marginVertical: 8,
-        marginTop:20,    
-        marginHorizontal:50
-    },
-
-    Button2 :{
-        width: '70%', 
-        height: 50,
-        borderRadius: 8,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginVertical: 8,
-        marginTop:20,    
-        marginHorizontal:50
-    },
+        marginTop:30,},
 
     ButtonText:{color: 'white',
         fontSize: 16,
@@ -108,7 +75,7 @@ const styles = StyleSheet.create({
     groupButton: {backgroundColor: '#5DADE2',},
 
     BottomTab: {
-        flexDirection: 'row',
+    flexDirection: 'row',
     justifyContent: 'space-around',
     paddingVertical: 10,
     borderTopWidth: 1,
@@ -125,4 +92,69 @@ const styles = StyleSheet.create({
         fontSize: 12,
         textAlign: 'center'
     },
+    input:{
+    width: "100%",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+    marginBottom: 16,
+    height:30,
+    marginRight:10
+    
+    },
+    moadlView: {
+        flex: 1, 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    },
+
+    view:{
+        backgroundColor:'#9BDC5F',
+        borderRadius:20,
+        padding:40,
+        alignItems: 'center',
+        marginTop:200,
+        margin:50,
+        shadowOffset :{
+            width:0,
+            height:2
+        },
+        shadowOpacity:0.25,
+        shadowRadius:4,
+        elevation:5
+    },
+    viewText: { 
+        fontSize:20,
+        color:'#000000',
+        fontWeight:'bold',
+        textAlign:'center',
+        marginBottom:50
+    },
+    modalText:{
+        color:'#000000',
+        fontsize:15,
+        textAlign:'center',
+        fontWeight:'bold'
+    },
+    Row:{
+        flexDirection:'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+    },
+    modalbutton: {
+    backgroundColor: '#D9D9D9',
+    paddingVertical: 17,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop:-20
+    },
+    buttontext: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+    }
 });
