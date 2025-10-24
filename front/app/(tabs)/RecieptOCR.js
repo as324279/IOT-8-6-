@@ -58,29 +58,25 @@ const ReceiptOCR = () => { // (컴포넌트 이름은 ReceiptOCR로 둬도 됨)
             <Button title="영수증 이미지 선택" onPress={pickImage} color="#7DBCE9" />
         </View>
       
-    
+      
       {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#7DBCE9" style={{ marginTop: 20 }} />
-      ) : (
+      
         <ScrollView style={styles.scrollBox}>
           <Text style={styles.sectionTitle}>🧾 OCR 추출 결과</Text>
-          <Text style={styles.resultText}>{textResult}</Text>
+          {Array.isArray(textResult) ? (
+            textResult.map((Items,idx) => (
+              <Text key = {idx}>
+                {Items.ItemName} - {Items.ItemPrice}
+              </Text>
+            ))
+          ) : ( <Text style={styles.resultText}>{textResult}</Text>
+          )}
+          
 
-          {/* {parsedResult && Array.isArray(parsedResult) && parsedResult.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>💡 상품명 / 가격</Text>
-              {parsedResult.map((item, index) => (
-                <View key={index} style={styles.itemBox}>
-                  <Text style={styles.itemText}>📦 {item.ItemName}</Text>
-                  <Text style={styles.priceText}>💰 {item.ItemPrice}</Text>
-                </View>
-              ))}
-            </>
-          )} */}
+
         </ScrollView>
-      )}
+      
     </View>
   );
 };
