@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Checkbox } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import TopHeader from '../../components/Header';
+import TopHeader from '../../components/TopHeader';
 
 const ShoppingHome = ()=>{
 
