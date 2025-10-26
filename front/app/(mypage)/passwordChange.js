@@ -7,8 +7,6 @@ import {
     TextInput,
     View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import TopHeader from '../../components/TopHeader';
 
 export default function PasswordChangeScreen() {
   const router = useRouter();
@@ -17,13 +15,6 @@ export default function PasswordChangeScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <TopHeader
-        title="비밀번호 변경"
-        showBack={true} 
-        onBackPress={() => router.back()} 
-        showIcons={false} 
-      />
       <View style={styles.container}>
         <Text style={styles.subtitle}>
           본인 확인을 위해 비밀번호를 입력해주세요
@@ -63,19 +54,13 @@ export default function PasswordChangeScreen() {
           <Text style={styles.buttonText}>변경하기</Text>
         </Pressable>
       </View>
-    </SafeAreaView>
   );
 }
 
-// (auth) 폴더의 스타일을 기반으로 재구성
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
   container: {
     flex: 1,
-    paddingTop: 30, // TopHeader가 있으므로 paddingTop 조정
+    paddingTop: 30, 
     paddingHorizontal: 20,
   },
   subtitle: {
@@ -86,23 +71,23 @@ const styles = StyleSheet.create({
   input: {
     width: '100%',
     height: 50,
-    backgroundColor: '#F5FFF5', // (auth) 스타일
+    backgroundColor: '#F5FFF5', 
     borderRadius: 8,
     paddingHorizontal: 15,
     fontSize: 16,
     color: '#333',
     borderWidth: 1,
     borderColor: 'transparent',
-    marginBottom: 20, // 간격 추가
+    marginBottom: 20, 
   },
   button: {
     width: '100%',
     height: 50,
-    backgroundColor: '#7DBCE9', // (auth) 스타일
+    backgroundColor: '#7DBCE9', 
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20, // 인풋과의 간격
+    marginTop: 20, 
   },
   buttonText: {
     color: 'white',
