@@ -6,6 +6,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // [수정] 파일 이름과 경로를 실제 파일 위치에 맞게 수정 (TopHeader.js로 가정)
 import TopHeader from '../../components/TopHeader';
 
+// 알림 기능 위한 것
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true, // 알림창 보이게
+    shouldPlaySound: true, // 소리 켜기
+    shouldSetBadge: false, // 앱 아이콘 배지 X
+  }),
+});
+
 const MainHome = ()=>{
     const router = useRouter();
     // [삭제] const navigation = useNavigation(); // 사용 안 함
@@ -13,10 +22,15 @@ const MainHome = ()=>{
     const [modalType, setModalType] = useState(''); // 'create' or 'invite'
     const [ismodalValue, setIsmodalValue] = useState(""); // Input value for group name or invite code
 
-    // useEffect can be used later for fetching user's groups, etc.
     useEffect(() => {
-        // Fetch user groups or other initial data here
-    }, []);
+    
+            (async () => {
+            const { status } = await Notifications.requestPermissionsAsync();
+            if (status !== 'granted') {
+                alert('알림 권한이 필요합니다!');
+            }
+            })();
+        }, []);
 
     const OpenModal = (type) => {
         setModalType(type);
@@ -27,6 +41,18 @@ const MainHome = ()=>{
         setIsModal(false);
         setIsmodalValue(""); // Clear input on close
     }
+
+    // 프론트에서 알림 띄우는 것 -> 백엔드 및 DB 연동 필수
+    const handleNotify = async () => {
+        await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "🛍️ 장보기 알림",
+        body: "우유랑 계란 사야 하는 거 잊지 마세요!",
+        subtitle: "오늘의 쇼핑 리스트",
+    },
+        trigger: { seconds: 5 },
+        });
+    };
 
     // Placeholder functions for API calls
     const handleCreateGroup = async () => {
@@ -58,6 +84,10 @@ const MainHome = ()=>{
                 showIcons={true}
                 title="채움"
             />
+
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <Button title="로컬 알림 테스트" onPress={handleNotify} />
+            </View>
 
             <Pressable style = { [styles.Button,styles.groupButton] } onPress={() => OpenModal('create')} >
                 <Text style = {styles.ButtonText}>새로운 그룹 생성</Text>
