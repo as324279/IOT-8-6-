@@ -30,13 +30,14 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="userHome"
+        name="mypage"
         options={{
           title:'마이페이지',
           tabBarLabel:'마이페이지',
           tabBarIcon: ({ color, size }) => (
             <FontAwesome5 name="user-circle" size={size} color={color} />
           ),
+
         }}
       />
 

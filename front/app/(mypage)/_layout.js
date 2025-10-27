@@ -17,13 +17,7 @@ export default function MyPageLayout() {
         ),
       }}
     >
-      <Stack.Screen
-        name="mypage"
-        options={{
-          title: '마이페이지',
-          showIcons: true, 
-        }}
-      />
+      
       <Stack.Screen
         name="passwordChange"
         options={{ title: '비밀번호 변경' }}

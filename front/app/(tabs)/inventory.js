@@ -25,17 +25,21 @@ const ALL_ITEMS = [
 ];
 
 const ItemCard = ({ item }) => {
-  return (
-    <View style={styles.itemCard}>
+
+    const router = useRouter();
+
+    const handlePress = () => {
+    router.push(`/itemDetail?id=${item.id}`); 
+  };
+return (
+    <TouchableOpacity style={styles.itemCard} > 
       <View style={styles.itemImagePlaceholder} />
-
       <Text style={styles.itemText}>{item.name}</Text>
-
-      {/* 더보기 버튼 */}
-      <TouchableOpacity onPress={() => console.log("더보기 클릭:", item.name)}>
+      
+      <TouchableOpacity onPress={handlePress}> 
         <MaterialCommunityIcons name="dots-vertical" size={24} color="#555" />
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -66,7 +70,6 @@ export default function InventoryScreen() {
         title="채움" // 방 제목(추후 사용자의 방 제목으로 변경)
       />
 
-      {/* 8. 기존 View를 container 스타일로 변경 */}
       <View style={styles.container}>
         <RoomTabs
           selectedCategory={selectedCategory}
@@ -100,7 +103,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
-  // --- 물품 목록 ---
+  // 물품 목록
   listContainer: {
     flex: 1,
     paddingTop: 8,
