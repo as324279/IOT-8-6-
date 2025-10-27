@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router'; // [수정] useNavigation import 삭제
+import * as Notifications from 'expo-notifications';
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Button, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { TextInput } from 'react-native-paper'; // TextInput from react-native-paper (for styling consistency)
 import { SafeAreaView } from 'react-native-safe-area-context';
 // [수정] 파일 이름과 경로를 실제 파일 위치에 맞게 수정 (TopHeader.js로 가정)
