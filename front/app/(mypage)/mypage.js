@@ -1,6 +1,15 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Stack, useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
+//import { useAuth } from '../../components/AuthProvider';
+import React, { useState } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 const MenuButton = ({ title, onPress }) => {
   return (
@@ -13,43 +22,78 @@ const MenuButton = ({ title, onPress }) => {
 
 export default function MyPageScreen() {
   const router = useRouter();
+  // 닉네임 수정 기능
+  const [isEditing, setIsEditing] = useState(false);
+  const [nickname, setNickname] = useState('닉네임');
+
+  const handleSaveNickname = () => {
+    setIsEditing(false);
+    console.log('새 닉네임 저장:', nickname);
+  };
+
+  //const { signOut } = useAuth();
+
+  const handleLogout = async () => {
+    //await signOut();
+    console.log('로그아웃 임시 처리');
+  };
 
   return (
     <ScrollView style={styles.container}>
-      
-      <Stack.Screen options={{ title: '마이페이지' }} />
 
       <View style={styles.profileSection}>
         <TouchableOpacity style={styles.profileImageContainer}>
           <MaterialCommunityIcons name="camera-outline" size={40} color="#8e8e8e" />
         </TouchableOpacity>
-        
-        <Text style={styles.nickname}>닉네임</Text>
-        
-        <TouchableOpacity>
-          <MaterialCommunityIcons name="pencil-outline" size={24} color="#333" />
-        </TouchableOpacity>
+
+
+        {isEditing ? (
+          <TextInput
+            style={styles.nicknameInput}
+            value={nickname}
+            onChangeText={setNickname}
+            autoFocus={true}
+          />
+        ) : (
+          <Text style={styles.nickname}>{nickname}</Text>
+        )}
+
+        {isEditing ? (
+          <TouchableOpacity onPress={handleSaveNickname}>
+            <MaterialCommunityIcons name="check" size={24} color="#3498db" />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity onPress={() => setIsEditing(true)}>
+            <MaterialCommunityIcons name="pencil-outline" size={24} color="#333" />
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.menuGroup}>
-        <MenuButton 
-          title="비밀번호 변경" 
-          onPress={() => router.push('./passwordChange')} 
+        <MenuButton
+          title="비밀번호 변경"
+          onPress={() => router.push('./passwordChange')}
         />
-        <MenuButton 
-          title="알림 설정" 
-          onPress={() => router.push('./notificationSettings')} 
+        <MenuButton
+          title="알림 설정"
+          onPress={() => router.push('./notificationSettings')}
         />
-        <MenuButton title="공지사항" onPress={() => console.log('공지사항 클릭')} />
-        <MenuButton title="서비스 문의" onPress={() => console.log('서비스 문의 클릭')} />
+        <MenuButton
+          title="공지사항"
+          onPress={() => router.push('./noticeScreen')}
+        />
+        <MenuButton
+          title="서비스 문의"
+          onPress={() => router.push('./inquiryScreen')}
+        />
       </View>
 
       <View style={styles.logoutSection}>
-        <TouchableOpacity style={styles.logoutButton} onPress={() => console.log('로그아웃 클릭')}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutText}>로그아웃</Text>
         </TouchableOpacity>
       </View>
-      
+
       <TouchableOpacity style={styles.deleteAccountContainer} onPress={() => console.log('계정 탈퇴 클릭')}>
         <Text style={styles.deleteAccountText}>계정 탈퇴</Text>
       </TouchableOpacity>
@@ -57,7 +101,6 @@ export default function MyPageScreen() {
   );
 }
 
-// styles는 기존과 동일합니다.
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -83,6 +126,16 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     flex: 1,
+    marginHorizontal: 5,
+  },
+  nicknameInput: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    flex: 1,
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    marginHorizontal: 5,
+    paddingVertical: 0,
   },
   menuGroup: {
     marginTop: 10,
