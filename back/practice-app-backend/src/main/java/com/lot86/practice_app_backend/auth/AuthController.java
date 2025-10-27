@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController // 1. 컨트롤러 선언
-@RequestMapping("/api/v1/auth") // 2. 팀 표준 URL
+@RequestMapping("/api/v1/auth") // 2. 팀 표준 URL 바꿔도딤 일단 url위치임
 @RequiredArgsConstructor // 3. 생성자 주입
 public class AuthController {
 
