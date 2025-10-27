@@ -60,6 +60,7 @@ export default function PasswordChangeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'white',
     paddingTop: 30, 
     paddingHorizontal: 20,
   },

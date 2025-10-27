@@ -1,52 +1,47 @@
-import { Stack } from 'expo-router';
-import { AuthProvider } from '../../components/AuthProvider';
+import { Stack } from "expo-router";
 
 export default function AuthLayout() {
   return (
-    <AuthProvider>
-      <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen
+        name="index"
+        options={{
+          headerShown: false,
+          title: "Welcome",
+        }}
+      />
 
-        <Stack.Screen
-          name="index"
-          options={{
-            headerShown: false,
-            title: 'Welcome'
-          }}
-        />
+      <Stack.Screen
+        name="(auth)"
+        options={{
+          headerShown: false,
+          title: "",
+        }}
+      />
 
-        <Stack.Screen
-          name="(auth)"
-          options={{
-            headerShown: false,
-            title: ''
-          }}
-        />
+      <Stack.Screen
+        name="mainHome"
+        options={{
+          headerShown: false,
+          title: "",
+        }}
+      />
 
-        <Stack.Screen
-          name="mainHome"
-          options={{
-            headerShown: false,
-            title: ''
-          }}
-        />
+      <Stack.Screen
+        name="(tabs)"
+        options={{
+          headerShown: false,
+          title: "",
+        }}
+      />
 
-        <Stack.Screen
-          name="(tabs)"
-          options={{
-            headerShown: false,
-            title: ''
-          }}
-        />
-
-        <Stack.Screen
-          name="(mypage)"
-          options={{
-            headerShown: false,
-            title: ''
-          }}
-        />
-
-      </Stack>
-    </AuthProvider>
+      <Stack.Screen
+        name="(mypage)"
+        options={{
+          headerShown: false,
+          title: "",
+        }}
+      />
+    </Stack>
   );
 }

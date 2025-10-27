@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useAuth } from '../../components/AuthProvider';
+//import { useAuth } from '../../components/AuthProvider';
 import React, { useState } from 'react';
 import {
   ScrollView,
@@ -31,10 +31,11 @@ export default function MyPageScreen() {
     console.log('새 닉네임 저장:', nickname);
   };
 
-  const { signOut } = useAuth();
+  //const { signOut } = useAuth();
 
   const handleLogout = async () => {
-    await signOut();
+    //await signOut();
+    console.log('로그아웃 임시 처리');
   };
 
   return (
