@@ -72,19 +72,19 @@ export default function MyPageScreen() {
       <View style={styles.menuGroup}>
         <MenuButton
           title="비밀번호 변경"
-          onPress={() => router.push('./passwordChange')}
+          onPress={() => router.push('/(mypage)/passwordChange')}
         />
         <MenuButton
           title="알림 설정"
-          onPress={() => router.push('./notificationSettings')}
+          onPress={() => router.push('/(mypage)/notificationSettings')}
         />
         <MenuButton
           title="공지사항"
-          onPress={() => router.push('./noticeScreen')}
+          onPress={() => router.push('/(mypage)/noticeScreen')}
         />
         <MenuButton
           title="서비스 문의"
-          onPress={() => router.push('./inquiryScreen')}
+          onPress={() => router.push('/(mypage)/inquiryScreen')}
         />
       </View>
 
