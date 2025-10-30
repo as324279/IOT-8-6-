@@ -14,7 +14,7 @@ const LoginScreen = () => {
     const [password, setPassword] = useState('');
     const [showpassword, setShowpassword] = useState(false);
 
-    //const { signIn } = useAuth(); // AuthProvider에서 signIn 함수를 가져옵니다.
+    const { signIn } = useAuth(); // AuthProvider에서 signIn 함수를 가져옵니다.
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -32,13 +32,17 @@ const LoginScreen = () => {
             const response = await axios.post(`${API_BASE_URL}/api/v1/auth/login`, loginData);
 
             // 3. [수정] 백엔드 응답이 { data: "token", error: null } 형식이 됨
-            const token = response.data?.data; // ?. 옵셔널 체이닝 추가
+            const token = response.data?.token || response.data?.data; 
+
+            console.log("백엔드 응답 확인",response.data);
+
 
             if (token) {
                 // Context의 signIn 함수로 토큰 저장 및 상태 업데이트
+                console.log("로그인 성공",token);
                 await signIn(token); // signIn 함수가 토큰을 저장한다고 가정
                 Alert.alert("로그인 성공", "메인 화면으로 이동합니다.");
-                router.replace('/(tabs)/mainHome');
+                router.replace('../(tabs)/mainHome');
             } else {
                 // data 필드가 없거나 비어있는 경우 (백엔드 에러 응답)
                 const errorMessage = response.data?.error || "로그인에 실패했습니다.";
