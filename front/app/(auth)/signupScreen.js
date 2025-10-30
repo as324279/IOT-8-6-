@@ -44,18 +44,25 @@ const SignupScreen = () => {
             privacyAgreed: togglebox2,
         };
 
+        console.log("서버로 보내는 데이터: ", userData);
+
         try {
             // 2. [수정] API 주소 변경 (/v1 추가 및 apiConfig 사용)
+            console.log(`🌐 POST 요청 전송: ${API_BASE_URL}/api/v1/auth/signup`);
             const response = await axios.post(`${API_BASE_URL}/api/v1/auth/signup`, userData);
+            console.log("서버 응답 수신: ",response.data);
 
             // 3. [수정] 백엔드 응답이 { data: null, error: null } 형식이 됨
             if (response.data && response.data.error) {
                 // 이 경우는 거의 없지만, 성공 응답인데 error가 있는 경우
                 Alert.alert("회원가입 오류", response.data.error);
+                console.log("응답 오류: ", response.data.error);
             } else {
                 Alert.alert("성공", "인증 메일을 발송했습니다. 메일함을 확인해주세요.");
                 // 4. [수정] 로그인 대신 이메일 확인 화면으로 이동
-                router.replace('/(auth)/checkScreen');
+                console.log("회원가입 성공: ");
+                router.push('checkScreen');
+                console.log("라우터 실행 됬다.")
             }
 
         } catch (error) {
