@@ -14,7 +14,7 @@ const LoginScreen = () => {
     const [password, setPassword] = useState('');
     const [showpassword, setShowpassword] = useState(false);
 
-    const { signIn } = useAuth(); // AuthProvider에서 signIn 함수를 가져옵니다.
+    //const { signIn } = useAuth(); // AuthProvider에서 signIn 함수를 가져옵니다.
 
     const handleLogin = async () => {
         if (!email || !password) {

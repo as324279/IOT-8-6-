@@ -1,8 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import TopHeader from '../../components/TopHeader';
 
 const SettingRow = ({ title, value, onValueChange, disabled = false }) => {
   return (
@@ -35,14 +33,7 @@ export default function NotificationSettingsScreen() {
     setIsMemberEnabled(value);
   };
 
-  return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <TopHeader
-        title="알림 설정"
-        showBack={true} // 뒤로가기 버튼 표시
-        onBackPress={() => router.back()} // 뒤로가기 기능
-        showIcons={false} // 우측 아이콘 숨김
-      />
+  return (    
       <View style={styles.container}>
         <SettingRow
           title="전체 알림 받기"
@@ -72,7 +63,6 @@ export default function NotificationSettingsScreen() {
           disabled={!isAllEnabled} 
         />
       </View>
-    </SafeAreaView>
   );
 }
 
