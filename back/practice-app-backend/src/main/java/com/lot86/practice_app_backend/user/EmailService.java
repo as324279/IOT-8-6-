@@ -9,26 +9,43 @@ import org.springframework.stereotype.Service;
 public class EmailService {
 
     private final JavaMailSender mailSender;
-    private final String senderEmail; // 1. 보내는 사람 이메일 (properties에서 주입)
+    private final String senderEmail;
 
-    // 2. 생성자에서 mailSender와 properties의 spring.mail.username 값을 주입받음
     public EmailService(JavaMailSender mailSender,
                         @Value("${spring.mail.username}") String senderEmail) {
         this.mailSender = mailSender;
         this.senderEmail = senderEmail;
     }
 
-    // 3. 인증 메일 발송
-    public void sendVerification(String to, String token) {
-        // 4. 프론트엔드 인증 페이지 URL (팀 표준에 맞춰 수정 필요)
-        String link = "http://localhost:3000/verify-email?token=" + token; // (임시 프론트 URL)
+    /**
+     * 이메일 인증번호 발송 (6자리 코드)
+     */
+    public void sendVerification(String to, String code) {
 
-        SimpleMailMessage msg = new SimpleMailMessage();
-        msg.setFrom(senderEmail); // [수정] 보내는 사람 설정 (properties 값)
-        msg.setTo(to);
-        msg.setSubject("[Household] 이메일 인증을 완료해주세요");
-        msg.setText("아래 링크를 눌러 이메일 인증을 완료하세요:\n" + link + "\n\n유효기간: 24시간");
+        try {
+            SimpleMailMessage msg = new SimpleMailMessage();
 
-        mailSender.send(msg);
+            // Gmail은 "이름 <이메일>" 형식이 안정적
+            msg.setFrom("Household App <" + senderEmail + ">");
+            msg.setTo(to);
+
+            msg.setSubject("[Household] 이메일 인증번호 안내");
+
+            msg.setText(
+                    "안녕하세요.\n\n" +
+                            "이메일 인증을 위해 아래 인증번호를 입력해주세요.\n\n" +
+                            "📌 인증번호: " + code + "\n\n" +
+                            "인증번호 유효시간: 10분\n" +
+                            "앱/웹의 이메일 인증 화면에 위 인증번호를 입력해주세요.\n\n" +
+                            "감사합니다."
+            );
+
+            mailSender.send(msg);
+            System.out.println("📧 인증 메일 전송 완료 → " + to);
+
+        } catch (Exception e) {
+            System.err.println("❌ 이메일 전송 실패: " + e.getMessage());
+            throw new IllegalStateException("이메일 전송 중 문제가 발생했습니다.");
+        }
     }
 }

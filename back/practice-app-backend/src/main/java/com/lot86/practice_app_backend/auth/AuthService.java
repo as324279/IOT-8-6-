@@ -2,13 +2,12 @@ package com.lot86.practice_app_backend.auth;
 
 import com.lot86.practice_app_backend.auth.dto.UserLoginRequest;
 import com.lot86.practice_app_backend.auth.dto.UserSignupRequest;
-import com.lot86.practice_app_backend.auth.event.UserSignedUpEvent; // [수정] 1단계에서 만든 이벤트 임포트
+import com.lot86.practice_app_backend.auth.event.UserSignedUpEvent;
 import com.lot86.practice_app_backend.config.jwt.JwtUtil;
 import com.lot86.practice_app_backend.entity.AppUser;
 import com.lot86.practice_app_backend.repo.AppUserRepository;
-// import com.lot86.practice_app_backend.user.EmailVerificationService; // [삭제] 직접 호출 안 함
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher; // [추가] 이벤트 발행기 임포트
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,46 +20,48 @@ public class AuthService {
     private final AppUserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
-    // private final EmailVerificationService emailVerificationService; // [삭제]
-    private final ApplicationEventPublisher publisher; // [추가] 이벤트 발행기 주입
+    private final ApplicationEventPublisher publisher;
 
+    /** 회원가입 */
     @Transactional
     public void signup(UserSignupRequest requestDto) {
-        if (userRepository.findByEmail(requestDto.getEmail()).isPresent()) {
+        final String email = requestDto.getEmail();
+        final String rawPw = requestDto.getPassword();
+        final String name  = requestDto.getName();
+
+        // citext라서 findByEmail이면 충분 (IgnoreCase 불필요)
+        if (userRepository.findByEmail(email).isPresent()) {
             throw new IllegalStateException("이미 사용 중인 이메일입니다.");
         }
 
-        String encodedPassword = passwordEncoder.encode(requestDto.getPassword());
+        AppUser newUser = new AppUser();
+        newUser.setEmail(email);
+        newUser.setPasswordHash(passwordEncoder.encode(rawPw));
+        newUser.setName(name);
 
-        AppUser newUser = new AppUser(
-                requestDto.getEmail(),
-                encodedPassword,
-                requestDto.getName()
-        );
+        userRepository.save(newUser);
 
-        userRepository.save(newUser); // 1. DB에 사용자 저장 (트랜잭션 A)
-
-        // 2. [수정] 트랜잭션 A가 커밋된 후 실행될 이벤트를 발행
-        //    (newUser.getUserId()와 .getEmail()이 AppUser 엔티티에 존재해야 함)
+        // 회원가입 후 이메일 인증 이벤트 발행
         publisher.publishEvent(new UserSignedUpEvent(newUser.getUserId(), newUser.getEmail()));
-        // emailVerificationService.issueAndSend(newUser); // [삭제]
     }
 
+    /** 로그인 */
     @Transactional
     public String login(UserLoginRequest requestDto) {
-        AppUser user = userRepository.findByEmail(requestDto.getEmail())
+        final String email = requestDto.getEmail();
+        final String rawPw = requestDto.getPassword();
+
+        AppUser user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 이메일입니다."));
 
-        if (!passwordEncoder.matches(requestDto.getPassword(), user.getPasswordHash())) {
+        if (!passwordEncoder.matches(rawPw, user.getPasswordHash())) {
             throw new IllegalArgumentException("잘못된 비밀번호입니다.");
         }
-
         if (!user.isEmailVerified()) {
             throw new IllegalStateException("이메일 인증이 완료되지 않았습니다.");
         }
 
-        // (user.getUserId()와 .isEmailVerified()가 AppUser 엔티티에 존재해야 함)
-        return jwtUtil.createAccess(user.getUserId(), user.isEmailVerified());
+        // ✅ JwtUtil의 실제 시그니처에 맞춰 호출 (예: createAccessToken)
+        return jwtUtil.createAccessToken(user.getUserId(), user.getEmail(), user.isEmailVerified());
     }
 }
-

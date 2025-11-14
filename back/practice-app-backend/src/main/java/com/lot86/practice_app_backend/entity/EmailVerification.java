@@ -23,8 +23,9 @@ public class EmailVerification {
     @Column(name = "user_id", nullable = false, columnDefinition = "uuid")
     private UUID userId;
 
-    @Column(name = "token", nullable = false, unique = true)
-    private String token;
+    // ✅ 6자리 숫자 코드용 컬럼 (unique는 제거: 우연히 중복될 수 있으니까)
+    @Column(name = "token", nullable = false, length = 6)
+    private String token;   // 예: "123456"
 
     @Column(name = "purpose", nullable = false, length = 20)
     private String purpose; // 'verify_email','reset_password','change_email'
@@ -42,5 +43,14 @@ public class EmailVerification {
     public void prePersist() {
         if (id == null) id = UUID.randomUUID();
         if (createdAt == null) createdAt = OffsetDateTime.now(ZoneOffset.UTC);
+    }
+
+    // (선택) 사용/만료 편의 메소드
+    public boolean isExpired() {
+        return expiresAt != null && expiresAt.isBefore(OffsetDateTime.now(ZoneOffset.UTC));
+    }
+
+    public boolean isUsed() {
+        return usedAt != null;
     }
 }
