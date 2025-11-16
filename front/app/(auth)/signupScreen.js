@@ -19,6 +19,51 @@ const SignupScreen = () => {
     const [showpasswordcheck, setShowpasswordcheck] = useState(false);
     const [togglebox,setTogglebox] = useState(false);
     const [togglebox2, setTogglebox2] = useState(false);
+    const [eCode,setECode] = useState(''); //이메일 인증코드
+    const [isEVerified, setIsEVerified] = useState(false); //인증코드 확인
+
+    //이메일 인증 발송
+    const sendEmail = async () => {
+        
+        if (!email) {
+                Alert.alert("이메일을 입력해주세요!");
+                console.log("이메일 입력");
+                return;
+        }
+
+        try {
+            const response = await axios.post(`${API_BASE_URL}/api/v1/auth/send-code`, {
+                email:email,
+            });
+        
+            Alert.alert("인증코드가 발송되었습니다.");
+            console.log("코드 발송 확인",response.data);
+        } catch (error) {
+            console.log("인증 코드 오류:", error.response?.data || error);
+
+        }
+        
+    }
+
+    //이메일 인증 코드 확인
+    const verifyCode = async () => {
+        if (!eCode) {
+            Alert.alert("인증코드를 입력하세요");
+            return;
+        }
+        try {
+            const response = await axios.post(`${API_BASE_URL}/api/v1/auth/verify-code`, {
+                email:email,
+                code : eCode
+            });
+            if (response.data.success) {
+                setIsEVerified(true);
+                Alert.alert("이메일 인증이 완료되었습니다.");
+            }
+        } catch (error) {
+            Alert.alert("인증 코드 오류",error.response?.data?.error || "인증실패");
+        }
+    }
 
     const handleSignup = async () => {
         if (!email || !name || !password || !passwordcheck) {
@@ -37,9 +82,9 @@ const SignupScreen = () => {
 
         const userData = {
             email: email,
-            password: password,
+            
             name: name,
-            // [추가] 백엔드 SignupRequest DTO에 맞춰 약관 동의 값 전달
+            password: password,
             termsAgreed: togglebox,
             privacyAgreed: togglebox2,
         };
@@ -83,7 +128,9 @@ const SignupScreen = () => {
         <View style = {styles.container}>
             <Text style = {styles.HeaderText}>반갑습니다. 정보를 입력해주세요!</Text>
 
-            <TextInput style = {styles.input}
+            
+            <View style = {styles.inputContainer}>
+            <TextInput style = {styles.inputfiled}
             placeholder='Email을 입력해주세요.'
             placeholderTextColor={'#000000'}
             value={email}
@@ -91,6 +138,30 @@ const SignupScreen = () => {
             keyboardType="email-address"
             autoCapitalize="none"
             />
+            <Pressable style = {styles.verifyButton} onPress={sendEmail}>
+                <Text style = {styles.verifynextButton}>인증</Text>
+            </Pressable>
+            </View>
+
+            <View style = {styles.inputContainer}>
+            <TextInput style = {styles.inputfiled}
+            placeholder='인증코드을 입력해주세요.'
+            placeholderTextColor={'#000000'}
+            value={eCode}
+            onChangeText={setECode}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            />
+            <Pressable style = {styles.verifyButton} onPress={verifyCode}>
+                <Text style = {styles.verifynextButton}>인증 완료!</Text>
+            </Pressable>
+            </View>
+
+            {isEVerified && (
+                <Text style = {styles.verifyText}>
+                    이메일 인증 완료
+                </Text>
+            )}
 
             <TextInput style = {styles.input}
             placeholder='닉네임을 입력해주세요.'
@@ -205,6 +276,44 @@ const styles  = StyleSheet.create({
         fontWeight: 'bold',
         color: 'black',
         marginBottom: 40, // 입력 필드와의 간격
-        lineHeight: 40, }
+        lineHeight: 40, },
+inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    height: 50,
+    backgroundColor: "#F5FFF5",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "transparent",
+    marginBottom: 20,
+    paddingHorizontal: 10,
+},
+inputfiled:{
+    flex: 1,
+    fontSize: 16,
+    color: "#333",
+},
+verifyButton:{
+    backgroundColor: "#7DBCE9",
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 6,
+    marginLeft: 10,
+    justifyContent: "center",
+    alignItems: "center",
+},
+verifynextButton: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "bold",
+},
+verifyText: {
+    color: "#28A745",           // 초록색 ✔ 성공 표시
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 15,
+    marginLeft: 5
+}
 });
 
