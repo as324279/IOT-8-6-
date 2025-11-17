@@ -2,24 +2,41 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'; 
 import { useAuth } from '../../components/AuthProvider';
-import { API_BASE_URL } from '../../config/apiConfig'; // 1. API 설정 파일 import
+import { API_BASE_URL } from '../../config/apiConfig'; 
 
 const LoginScreen = () => {
-
     const router = useRouter();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showpassword, setShowpassword] = useState(false);
 
-    const { signIn } = useAuth(); // AuthProvider에서 signIn 함수를 가져옵니다.
+    const [emailError, setEmailError] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+
+    const { signIn } = useAuth();
 
     const handleLogin = async () => {
-        if (!email || !password) {
-            Alert.alert("오류", "이메일과 비밀번호를 모두 입력해주세요.");
-            return;
+        console.log("LOGIN BUTTON CLICKED!");
+
+        //  에러 메시지를 초기화
+        setEmailError('');
+        setPasswordError('');
+
+        //  유효성 검사 
+        let hasError = false;
+        if (!email) {
+            setEmailError("이메일을 입력해주세요.");
+            hasError = true;
+        }
+        if (!password) {
+            setPasswordError("비밀번호를 입력해주세요.");
+            hasError = true;
+        }
+        if (hasError) {
+            return; // 에러가 있으면 API 요청을 보내지 않고 함수 종료
         }
 
         const loginData = {
@@ -28,37 +45,26 @@ const LoginScreen = () => {
         };
 
         try {
-            // 2. [수정] API 주소 변경 (/v1 추가 및 apiConfig 사용)
             const response = await axios.post(`${API_BASE_URL}/api/v1/auth/login`, loginData);
-
-            // 3. [수정] 백엔드 응답이 { data: "token", error: null } 형식이 됨
             const token = response.data?.token || response.data?.data; 
-
-            console.log("백엔드 응답 확인",response.data);
-
-
+            
             if (token) {
-                // Context의 signIn 함수로 토큰 저장 및 상태 업데이트
                 console.log("로그인 성공",token);
-                await signIn(token); // signIn 함수가 토큰을 저장한다고 가정
-                Alert.alert("로그인 성공", "메인 화면으로 이동합니다.");
+                await signIn(token);
                 router.replace('../(tabs)/mainHome');
             } else {
-                // data 필드가 없거나 비어있는 경우 (백엔드 에러 응답)
                 const errorMessage = response.data?.error || "로그인에 실패했습니다.";
-                Alert.alert("로그인 오류", errorMessage);
+                setPasswordError(errorMessage);
             }
 
         } catch (error) {
             if (error.response) {
-                // 4. [수정] 백엔드가 보내는 { error: "메시지" } 형식의 오류 처리
-                // 예: "이메일 인증이 완료되지 않았습니다.", "자격증명 오류" 등
-                const errorMessage = error.response.data?.error || "로그인 중 오류 발생"; // ?. 옵셔널 체이닝 추가
-                console.error('서버 응답 에러:', error.response.data); // data 전체 로그 확인
-                Alert.alert("로그인 오류", errorMessage);
+                const errorMessage = error.response.data?.error || "로그인 중 오류 발생";
+                console.error('서버 응답 에러:', error.response.data);
+                setPasswordError(errorMessage); 
             } else {
                 console.error('연결 오류:', error.message);
-                Alert.alert("연결 오류", "서버에 연결할 수 없습니다. IP 주소와 서버 상태를 확인하세요.");
+                setPasswordError("서버에 연결할 수 없습니다. 네트워크를 확인하세요.");
             }
         }
     };
@@ -67,28 +73,42 @@ const LoginScreen = () => {
         <View style = {styles.container}>
             <Text style = {styles.HeaderText}>로그인해주세요!</Text>
 
+            {/* --- 이메일 입력창 --- */}
             <TextInput style = {styles.input}
-            placeholder='Email을 입력해주세요.'
-            placeholderTextColor={'#000000'}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
+                placeholder='Email을 입력해주세요.'
+                placeholderTextColor={'#000000'}
+                value={email}
+                // 입력 시작하면 에러 제거
+                onChangeText={(text) => {
+                    setEmail(text);
+                    if (emailError) setEmailError('');
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
             />
+            {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
+
+            {/* --- 비밀번호 입력창 --- */}
             <View style = {styles.passwordContainer}>
                 <TextInput style = {styles.passwordInput}
-                placeholder='비밀번호를 입력해주세요'
-                value = {password}
-                secureTextEntry = {!showpassword}
-                onChangeText={setPassword}
-                placeholderTextColor={'#000000'}
+                    placeholder='비밀번호를 입력해주세요'
+                    value = {password}
+                    secureTextEntry = {!showpassword}
+                    // 입력 시작하면 에러 제거
+                    onChangeText={(text) => {
+                        setPassword(text);
+                        if (passwordError) setPasswordError('');
+                    }}
+                    placeholderTextColor={'#000000'}
                 />
                 <TouchableOpacity onPress = {() => setShowpassword(!showpassword)}>
                     <Ionicons name = {showpassword ? 'eye-off': 'eye'}
                             size = {20} color = 'gray'></Ionicons>
                 </TouchableOpacity>
             </View>
+            {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+
 
             <Pressable style = {styles.Button} onPress={handleLogin}>
                 <Text style = {styles.nextButton}>로그인</Text>
@@ -98,15 +118,16 @@ const LoginScreen = () => {
 }
 export default LoginScreen;
 
-// 스타일 코드는 기존과 동일
 const styles = StyleSheet.create({
     container:{
         flex: 1,
         backgroundColor: 'white',
         paddingTop: 50,
-        paddingHorizontal: 20,},
+        paddingHorizontal: 20,
+    },
 
-    input:{width: '100%',
+    input:{
+        width: '100%',
         height: 50,
         backgroundColor: '#F5FFF5',
         borderRadius: 8,
@@ -115,40 +136,54 @@ const styles = StyleSheet.create({
         color: '#333',
         borderWidth: 1,
         borderColor: 'transparent',
-        marginBottom:40 },
+    },
 
     passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5FFF5',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    paddingHorizontal: 15,
-    height: 50,
-    marginBottom: 30,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F5FFF5',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: 'transparent',
+        paddingHorizontal: 15,
+        height: 50,
+        marginTop: 30, 
     },
     passwordInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
+        flex: 1,
+        fontSize: 16,
+        color: '#333',
     },
-    Button:{width: '100%',
+
+    
+    errorText: {
+        color: 'red',
+        fontSize: 12,
+        marginTop: 5, 
+        marginLeft: 5, 
+    },
+
+    Button:{
+        width: '100%',
         height: 50,
         backgroundColor: '#7DBCE9',
         borderRadius: 8,
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 40, },
+        marginTop: 40, 
+    },
 
-    nextButton:{color: 'white',
+    nextButton:{
+        color: 'white',
         fontSize: 16,
-        fontWeight: 'bold',},
+        fontWeight: 'bold',
+    },
 
-    HeaderText: {fontSize: 32,
+    HeaderText: {
+        fontSize: 32,
         fontWeight: 'bold',
         color: 'black',
         marginBottom: 40,
-        lineHeight: 40, }
+        lineHeight: 40, 
+    }
 });
-
