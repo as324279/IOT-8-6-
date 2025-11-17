@@ -1,0 +1,45 @@
+# Created by Gemini
+# For a root project containing Spring Boot (Gradle) and React Native (Expo)
+
+### IntelliJ IDEA ###
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+target/
+
+### Java / Gradle (Backend) ###
+# Compiled class files
+back/practice-app-backend/build/
+back/practice-app-backend/bin/
+back/practice-app-backend/out/
+
+# Gradle
+back/practice-app-backend/.gradle/
+gradle-wrapper.jar
+
+# Log files
+*.log
+
+# Other
+.DS_Store
+/node_modules
+/npm-debug.log
+/yarn-error.log
+
+### React Native / Expo (Frontend) ###
+# Node
+front/node_modules/
+front/npm-debug.log*
+front/yarn-debug.log*
+front/yarn-error.log*
+
+# Expo
+front/.expo/
+front/web-build/
+front/app.bundle
+front/*.js.map
+front/ios/build
+front/android/build
+front/android/app/build
