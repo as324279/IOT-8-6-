@@ -25,43 +25,47 @@ public class AuthService {
     /** 회원가입 */
     @Transactional
     public void signup(UserSignupRequest requestDto) {
-        final String email = requestDto.getEmail();
-        final String rawPw = requestDto.getPassword();
-        final String name  = requestDto.getName();
+        // 1) 이메일 정규화
+        String email = requestDto.getEmail().trim().toLowerCase();
 
-        // citext라서 findByEmail이면 충분 (IgnoreCase 불필요)
-        if (userRepository.findByEmail(email).isPresent()) {
+        // 2) 중복 체크
+        if (userRepository.findByEmailIgnoreCase(email).isPresent()) {
             throw new IllegalStateException("이미 사용 중인 이메일입니다.");
         }
 
-        AppUser newUser = new AppUser();
-        newUser.setEmail(email);
-        newUser.setPasswordHash(passwordEncoder.encode(rawPw));
-        newUser.setName(name);
+        // 3) 비밀번호 해시 + 유저 생성
+        String encodedPassword = passwordEncoder.encode(requestDto.getPassword());
 
+        AppUser newUser = new AppUser(
+                email,                 // 정규화된 이메일
+                encodedPassword,
+                requestDto.getName()
+        );
+
+        // 4) 저장
         userRepository.save(newUser);
 
-        // 회원가입 후 이메일 인증 이벤트 발행
+        // 5) 회원가입 완료 이벤트 발행 (이후 EmailVerificationService가 인증번호 발송)
         publisher.publishEvent(new UserSignedUpEvent(newUser.getUserId(), newUser.getEmail()));
     }
 
     /** 로그인 */
     @Transactional
     public String login(UserLoginRequest requestDto) {
-        final String email = requestDto.getEmail();
-        final String rawPw = requestDto.getPassword();
+        String email = requestDto.getEmail().trim().toLowerCase();
 
-        AppUser user = userRepository.findByEmail(email)
+        AppUser user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 이메일입니다."));
 
-        if (!passwordEncoder.matches(rawPw, user.getPasswordHash())) {
+        if (!passwordEncoder.matches(requestDto.getPassword(), user.getPasswordHash())) {
             throw new IllegalArgumentException("잘못된 비밀번호입니다.");
         }
+
         if (!user.isEmailVerified()) {
             throw new IllegalStateException("이메일 인증이 완료되지 않았습니다.");
         }
 
-        // ✅ JwtUtil의 실제 시그니처에 맞춰 호출 (예: createAccessToken)
-        return jwtUtil.createAccessToken(user.getUserId(), user.getEmail(), user.isEmailVerified());
+        // JWT 발급
+        return jwtUtil.createAccess(user.getUserId(), user.isEmailVerified());
     }
 }

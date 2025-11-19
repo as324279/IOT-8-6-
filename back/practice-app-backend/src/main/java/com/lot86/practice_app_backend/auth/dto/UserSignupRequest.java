@@ -26,9 +26,10 @@ public class UserSignupRequest {
     private String name;
 
     // --- 약관 동의 필드 추가 ---
-    @AssertTrue(message = "서비스 이용약관에 동의해야 합니다.") // 이 필드가 true여야 함
-    private boolean agreeTos = true; // 서비스 이용약관 동의 여부
+    // --- [수정] 프론트엔드에서 전송하는 필드명과 일치시킴 ---
+    @AssertTrue(message = "서비스 이용약관에 동의해야 합니다.")
+    private boolean termsAgreed; // (기존 agreeTos -> termsAgreed)
 
-    @AssertTrue(message = "개인정보 수집 및 이용에 동의해야 합니다.") // 이 필드가 true여야 함
-    private boolean agreePrivacy = true; // 개인정보 수집 및 이용 동의 여부
+    @AssertTrue(message = "개인정보 수집 및 이용에 동의해야 합니다.")
+    private boolean privacyAgreed; // (기존 agreePrivacy -> privacyAgreed)
 }

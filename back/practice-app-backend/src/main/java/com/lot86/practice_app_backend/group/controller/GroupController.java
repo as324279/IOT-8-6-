@@ -1,50 +1,98 @@
 package com.lot86.practice_app_backend.group.controller;
 
 import com.lot86.practice_app_backend.common.ApiResponse;
-import com.lot86.practice_app_backend.group.entity.AppGroup; // AppGroup 엔티티 임포트
-import com.lot86.practice_app_backend.group.dto.GroupCreateRequest; // DTO 임포트 (경로 확인!)
+import com.lot86.practice_app_backend.group.dto.*;
+import com.lot86.practice_app_backend.group.entity.AppGroup;
 import com.lot86.practice_app_backend.group.service.GroupService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus; // HttpStatus 임포트
-import org.springframework.http.ResponseEntity; // ResponseEntity 임포트
-import org.springframework.security.core.Authentication; // Authentication 임포트
-import org.springframework.security.core.context.SecurityContextHolder; // SecurityContextHolder 임포트
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
-@RestController // REST 컨트롤러 선언
-@RequestMapping("/api/v1/groups") // 이 컨트롤러의 기본 경로
-@RequiredArgsConstructor // 생성자 주입
+@RestController
+@RequestMapping("/api/v1/groups")
+@RequiredArgsConstructor
 public class GroupController {
 
     private final GroupService groupService;
 
-    @PostMapping // HTTP POST 요청 처리 (경로는 /api/v1/groups)
-    // ResponseEntity를 사용하여 HTTP 상태 코드(201 Created)와 함께 응답
-    public ResponseEntity<ApiResponse<AppGroup>> createGroup(@Valid @RequestBody GroupCreateRequest requestDto) {
-
-        // --- 현재 로그인한 사용자 ID 가져오기 ---
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    /** 현재 로그인한 유저의 UUID 가져오기 (편하게 Authentication에서 바로 꺼냄) */
+    private UUID getCurrentUserId(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
-            // 인증되지 않은 사용자 처리 (SecurityConfig에서 걸러지겠지만 방어 코드)
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("로그인이 필요합니다."));
+            throw new IllegalStateException("로그인이 필요합니다.");
         }
-        // JwtAuthenticationFilter에서 Principal로 UUID를 저장했으므로 캐스팅
-        UUID currentUserId = (UUID) authentication.getPrincipal();
-        // --- 여기까지 ---
-
-        AppGroup createdGroup = groupService.createGroup(requestDto, currentUserId);
-
-        // 생성 성공 시 HTTP 상태 코드 201 Created 와 함께 생성된 그룹 정보 반환
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(createdGroup));
+        return (UUID) authentication.getPrincipal();
     }
 
-    // --- 여기에 그룹 조회, 수정, 삭제, 초대 등 다른 API 엔드포인트 추가 예정 ---
+    /** 0) 그룹 생성  (POST /api/v1/groups) */
+    @PostMapping
+    public ResponseEntity<ApiResponse<GroupCreateResponse>> createGroup(
+            @RequestBody GroupCreateRequest requestDto,
+            Authentication authentication
+    ) {
+        UUID currentUserId = getCurrentUserId(authentication);
+
+        AppGroup group = groupService.createGroup(requestDto, currentUserId);
+        GroupCreateResponse responseDto = GroupCreateResponse.fromEntity(group);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(responseDto));
+    }
+
+    /** 1) 초대코드 생성  (POST /api/v1/groups/{groupId}/invites) */
+    @PostMapping("/{groupId}/invites")
+    public ApiResponse<GroupInviteCreateResponse> createInvite(
+            @PathVariable UUID groupId,
+            Authentication authentication
+    ) {
+        UUID currentUserId = getCurrentUserId(authentication);
+        GroupInviteCreateResponse resp = groupService.createInvite(groupId, currentUserId);
+        return ApiResponse.ok(resp);
+    }
+
+    /** 2) 초대코드 검증  (GET /api/v1/groups/invites/check?code=XXXX) */
+    @GetMapping("/invites/check")
+    public ApiResponse<GroupInviteCheckResponse> checkInvite(@RequestParam("code") String code) {
+        GroupInviteCheckResponse resp = groupService.checkInviteCode(code);
+        return ApiResponse.ok(resp);
+    }
+
+    /** 3) 초대코드로 그룹 가입  (POST /api/v1/groups/join) */
+    @PostMapping("/join")
+    public ApiResponse<Void> joinByCode(
+            @Valid @RequestBody GroupJoinByCodeRequest request,
+            Authentication authentication
+    ) {
+        UUID currentUserId = getCurrentUserId(authentication);
+        groupService.joinGroupByCode(request.getCode(), currentUserId);
+        return ApiResponse.ok(null);
+    }
+
+    /** 4) 그룹 멤버 목록 조회  (GET /api/v1/groups/{groupId}/members) */
+    @GetMapping("/{groupId}/members")
+    public ApiResponse<List<GroupMemberResponse>> getMembers(
+            @PathVariable UUID groupId,
+            Authentication authentication
+    ) {
+        UUID currentUserId = getCurrentUserId(authentication);
+        List<GroupMemberResponse> members = groupService.getGroupMembers(groupId, currentUserId);
+        return ApiResponse.ok(members);
+    }
+
+    /** 5) 그룹 탈퇴 (본인)  (DELETE /api/v1/groups/{groupId}/members/me) */
+    @DeleteMapping("/{groupId}/members/me")
+    public ApiResponse<Void> leaveGroup(
+            @PathVariable UUID groupId,
+            Authentication authentication
+    ) {
+        UUID currentUserId = getCurrentUserId(authentication);
+        groupService.leaveGroup(groupId, currentUserId);
+        return ApiResponse.ok(null);
+    }
 }

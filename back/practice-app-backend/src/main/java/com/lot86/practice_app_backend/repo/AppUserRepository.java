@@ -11,6 +11,6 @@ public interface AppUserRepository extends JpaRepository<AppUser, UUID> {
     // 'findBy' + '필드이름' 으로 메소드를 만들면
     // Spring Data JPA가 알아서 이메일로 사용자를 찾아주는 SQL을 자동으로 만들어줍니다.
     // "SELECT * FROM app_user WHERE email = ?"
-    Optional<AppUser> findByEmail(String email);
+    Optional<AppUser> findByEmailIgnoreCase(String email);
 
 }

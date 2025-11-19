@@ -20,15 +20,19 @@ public class EmailVerification {
     @Column(name = "token_id", columnDefinition = "uuid")
     private UUID id;
 
+    // ✅ v1.1 스키마: user_id 컬럼 존재
     @Column(name = "user_id", nullable = false, columnDefinition = "uuid")
     private UUID userId;
 
-    // ✅ 6자리 숫자 코드용 컬럼 (unique는 제거: 우연히 중복될 수 있으니까)
-    @Column(name = "token", nullable = false, length = 6)
-    private String token;   // 예: "123456"
+    // ✅ v1.1 스키마: token TEXT NOT NULL UNIQUE
+    @Column(name = "token", nullable = false)
+    private String token;   // 6자리 코드 그대로 저장
 
     @Column(name = "purpose", nullable = false, length = 20)
     private String purpose; // 'verify_email','reset_password','change_email'
+
+    @Column(name = "new_email")
+    private String newEmail; // 필요 없으면 안 써도 됨
 
     @Column(name = "expires_at", nullable = false)
     private OffsetDateTime expiresAt;
@@ -45,7 +49,6 @@ public class EmailVerification {
         if (createdAt == null) createdAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 
-    // (선택) 사용/만료 편의 메소드
     public boolean isExpired() {
         return expiresAt != null && expiresAt.isBefore(OffsetDateTime.now(ZoneOffset.UTC));
     }

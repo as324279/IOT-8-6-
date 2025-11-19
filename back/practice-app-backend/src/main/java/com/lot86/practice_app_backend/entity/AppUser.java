@@ -10,6 +10,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+
 @Getter
 @Setter // 2. @Setter 추가 (setEmailVerified, setUserId 등을 사용하기 위해)
 @Entity
@@ -21,7 +22,8 @@ public class AppUser {
     @Column(name = "user_id")
     private UUID userId;
 
-    @Column(unique = true, nullable = false)
+    // v1.1: DB는 lower(email) 유니크 인덱스이므로 여기서 unique=true는 제거
+    @Column(name = "email", nullable = false, length = 320)
     private String email;
 
     @Column(name = "password_hash", nullable = false)
@@ -56,6 +58,17 @@ public class AppUser {
     public void prePersist() {
         if (this.userId == null) {
             this.userId = UUID.randomUUID();
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        normalizeEmail();
+    }
+
+    private void normalizeEmail() {
+        if (this.email != null) {
+            this.email = this.email.trim().toLowerCase();
         }
     }
 }
