@@ -5,12 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 import java.util.UUID;
 
-// JpaRepository<어떤 테이블을, 그 테이블의 ID 타입은>
 public interface AppUserRepository extends JpaRepository<AppUser, UUID> {
-
-    // 'findBy' + '필드이름' 으로 메소드를 만들면
-    // Spring Data JPA가 알아서 이메일로 사용자를 찾아주는 SQL을 자동으로 만들어줍니다.
-    // "SELECT * FROM app_user WHERE email = ?"
     Optional<AppUser> findByEmailIgnoreCase(String email);
 
+    // [신규] 이메일 중복 가입 방지용 체크 메소드
+    boolean existsByEmailIgnoreCase(String email);
 }

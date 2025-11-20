@@ -20,19 +20,19 @@ public class EmailVerification {
     @Column(name = "token_id", columnDefinition = "uuid")
     private UUID id;
 
-    // ✅ v1.1 스키마: user_id 컬럼 존재
-    @Column(name = "user_id", nullable = false, columnDefinition = "uuid")
-    private UUID userId;
+    // [변경] 기존 userId -> email로 변경 (가입 전 인증이므로 유저 ID가 없음)
+    @Column(name = "email", nullable = false, length = 320)
+    private String email;
 
-    // ✅ v1.1 스키마: token TEXT NOT NULL UNIQUE
+    // [변경] 인증 코드 (6자리 숫자) 저장
     @Column(name = "token", nullable = false)
-    private String token;   // 6자리 코드 그대로 저장
+    private String token;
 
     @Column(name = "purpose", nullable = false, length = 20)
-    private String purpose; // 'verify_email','reset_password','change_email'
+    private String purpose;
 
     @Column(name = "new_email")
-    private String newEmail; // 필요 없으면 안 써도 됨
+    private String newEmail;
 
     @Column(name = "expires_at", nullable = false)
     private OffsetDateTime expiresAt;
@@ -47,6 +47,7 @@ public class EmailVerification {
     public void prePersist() {
         if (id == null) id = UUID.randomUUID();
         if (createdAt == null) createdAt = OffsetDateTime.now(ZoneOffset.UTC);
+        if (email != null) email = email.trim().toLowerCase();
     }
 
     public boolean isExpired() {
@@ -55,5 +56,10 @@ public class EmailVerification {
 
     public boolean isUsed() {
         return usedAt != null;
+    }
+
+    // [신규] 인증 완료 시 시각 기록
+    public void markUsed() {
+        this.usedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 }
