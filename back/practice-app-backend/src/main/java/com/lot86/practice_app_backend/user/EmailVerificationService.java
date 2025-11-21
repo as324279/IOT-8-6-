@@ -1,16 +1,11 @@
 package com.lot86.practice_app_backend.user;
 
-import com.lot86.practice_app_backend.auth.event.UserSignedUpEvent;
-import com.lot86.practice_app_backend.entity.AppUser;
 import com.lot86.practice_app_backend.entity.EmailVerification;
 import com.lot86.practice_app_backend.repo.AppUserRepository;
 import com.lot86.practice_app_backend.repo.EmailVerificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
@@ -18,72 +13,75 @@ import java.time.ZoneOffset;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class EmailVerificationService {
 
     private final EmailVerificationRepository verificationRepository;
     private final AppUserRepository userRepository;
     private final EmailService emailService;
 
-    // 🔐 더 안전한 랜덤 코드 생성을 위한 SecureRandom
     private static final SecureRandom RANDOM = new SecureRandom();
+    private static final String PURPOSE_SIGNUP = "signup"; // 회원가입용 인증 목적 상수
 
-    /** 6자리 숫자 인증 코드 생성 (100000 ~ 999999) */
+    private String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase();
+    }
+
     private String generateCode() {
         int code = RANDOM.nextInt(900000) + 100000;
         return String.valueOf(code);
     }
 
-    /**
-     * 회원가입 트랜잭션 커밋 이후 실행:
-     * - 6자리 인증번호 발급
-     * - email_verification 저장
-     * - 사용자에게 이메일 발송
-     */
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void onUserSignup(UserSignedUpEvent event) {
+    // [변경] 인증 코드 발송 (가입 전 단계)
+    public void sendSignupCode(String rawEmail) {
+        String email = normalizeEmail(rawEmail);
+        if (email == null || email.isBlank()) throw new IllegalArgumentException("이메일을 입력해주세요.");
 
-        // ✅ 6자리 인증번호 생성
+        // 이미 가입된 이메일인지 체크
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw new IllegalStateException("이미 가입된 이메일입니다.");
+        }
+
         String code = generateCode();
 
+        // 인증 정보 저장 (만료시간 10분)
         EmailVerification ev = new EmailVerification();
-        ev.setUserId(event.userId());
-        ev.setToken(code);                       // 6자리 숫자 코드 저장
-        ev.setPurpose("verify_email");
-
-        // 📌 메일 내용과 일치하도록 유효시간 10분으로 설정
+        ev.setEmail(email);
+        ev.setToken(code);
+        ev.setPurpose(PURPOSE_SIGNUP);
         ev.setExpiresAt(OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(10));
 
         verificationRepository.save(ev);
-
-        // 📧 실제 이메일 발송 (인증번호 포함)
-        emailService.sendVerification(event.email(), code);
-
-        System.out.println("📧 이메일 인증번호 발급 및 전송 완료: " + event.email());
+        emailService.sendVerification(email, code);
     }
 
-    /**
-     * 인증번호(토큰) 검증:
-     *  - 유효한 코드인지 확인 (만료/사용 여부)
-     *  - 유효하면 해당 사용자 emailVerified = true
-     *  - 토큰 usedAt 세팅 후 재사용 방지
-     */
-    @Transactional
-    public void verify(String token) {
-        // ⚠️ EmailVerificationRepository에 아래 메소드가 반드시 있어야 함:
-        // Optional<EmailVerification> findActiveToken(String token);
-        EmailVerification ev = verificationRepository.findActiveToken(token)
-                .orElseThrow(() -> new IllegalStateException("만료되었거나 잘못된 인증번호입니다."));
+    // [변경] 인증 코드 검증 (사용자가 입력한 코드 확인)
+    public void verifySignupCode(String rawEmail, String code) {
+        String email = normalizeEmail(rawEmail);
+        if (code == null || code.isBlank()) throw new IllegalArgumentException("인증 코드를 입력해주세요.");
 
-        AppUser user = userRepository.findById(ev.getUserId())
-                .orElseThrow(() -> new IllegalStateException("존재하지 않는 사용자입니다."));
+        // 해당 이메일로 발송된 최신 인증 정보 조회
+        EmailVerification ev = verificationRepository
+                .findTopByEmailAndPurposeOrderByCreatedAtDesc(email, PURPOSE_SIGNUP)
+                .orElseThrow(() -> new IllegalStateException("먼저 인증코드를 발급받아주세요."));
 
-        // 이메일 인증 완료 처리
-        user.setEmailVerified(true);
+        if (ev.isUsed()) throw new IllegalStateException("이미 사용된 인증코드입니다.");
+        if (ev.isExpired()) throw new IllegalStateException("인증코드가 만료되었습니다.");
+        if (!ev.getToken().equals(code)) throw new IllegalStateException("인증코드가 일치하지 않습니다.");
 
-        // 토큰 사용 완료 처리 (재사용 방지)
-        ev.setUsedAt(OffsetDateTime.now(ZoneOffset.UTC));
+        // 인증 성공 처리 (usedAt 기록)
+        ev.markUsed();
+        verificationRepository.save(ev);
+    }
 
-        System.out.println("✅ 이메일 인증 완료: userId=" + user.getUserId());
+    // [신규] 회원가입 최종 단계에서 '정말 인증했는지' 확인하는 메소드
+    public void assertEmailVerifiedForSignup(String rawEmail) {
+        String email = normalizeEmail(rawEmail);
+        EmailVerification ev = verificationRepository
+                .findTopByEmailAndPurposeOrderByCreatedAtDesc(email, PURPOSE_SIGNUP)
+                .orElseThrow(() -> new IllegalStateException("이메일 인증을 먼저 진행해주세요."));
+
+        if (ev.isExpired()) throw new IllegalStateException("인증코드가 만료되었습니다.");
+        if (!ev.isUsed()) throw new IllegalStateException("이메일 인증이 완료되지 않았습니다.");
     }
 }

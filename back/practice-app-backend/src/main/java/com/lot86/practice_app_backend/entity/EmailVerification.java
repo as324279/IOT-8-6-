@@ -20,15 +20,19 @@ public class EmailVerification {
     @Column(name = "token_id", columnDefinition = "uuid")
     private UUID id;
 
-    @Column(name = "user_id", nullable = false, columnDefinition = "uuid")
-    private UUID userId;
+    // [변경] 기존 userId -> email로 변경 (가입 전 인증이므로 유저 ID가 없음)
+    @Column(name = "email", nullable = false, length = 320)
+    private String email;
 
-    // ✅ 6자리 숫자 코드용 컬럼 (unique는 제거: 우연히 중복될 수 있으니까)
-    @Column(name = "token", nullable = false, length = 6)
-    private String token;   // 예: "123456"
+    // [변경] 인증 코드 (6자리 숫자) 저장
+    @Column(name = "token", nullable = false)
+    private String token;
 
     @Column(name = "purpose", nullable = false, length = 20)
-    private String purpose; // 'verify_email','reset_password','change_email'
+    private String purpose;
+
+    @Column(name = "new_email")
+    private String newEmail;
 
     @Column(name = "expires_at", nullable = false)
     private OffsetDateTime expiresAt;
@@ -43,14 +47,19 @@ public class EmailVerification {
     public void prePersist() {
         if (id == null) id = UUID.randomUUID();
         if (createdAt == null) createdAt = OffsetDateTime.now(ZoneOffset.UTC);
+        if (email != null) email = email.trim().toLowerCase();
     }
 
-    // (선택) 사용/만료 편의 메소드
     public boolean isExpired() {
         return expiresAt != null && expiresAt.isBefore(OffsetDateTime.now(ZoneOffset.UTC));
     }
 
     public boolean isUsed() {
         return usedAt != null;
+    }
+
+    // [신규] 인증 완료 시 시각 기록
+    public void markUsed() {
+        this.usedAt = OffsetDateTime.now(ZoneOffset.UTC);
     }
 }

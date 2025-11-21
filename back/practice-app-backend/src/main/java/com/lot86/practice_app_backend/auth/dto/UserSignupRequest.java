@@ -1,6 +1,5 @@
 package com.lot86.practice_app_backend.auth.dto;
 
-
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -25,10 +24,11 @@ public class UserSignupRequest {
     @Size(min = 1, max = 30, message = "이름은 1자 이상 30자 이하로 입력해야 합니다.")
     private String name;
 
-    // --- 약관 동의 필드 추가 ---
-    @AssertTrue(message = "서비스 이용약관에 동의해야 합니다.") // 이 필드가 true여야 함
-    private boolean agreeTos = true; // 서비스 이용약관 동의 여부
+    // [변경] 프론트엔드 요청에 맞춰 약관 동의 필드 추가
+    @AssertTrue(message = "서비스 이용약관에 동의해야 합니다.")
+    private boolean termsAgreed;
 
-    @AssertTrue(message = "개인정보 수집 및 이용에 동의해야 합니다.") // 이 필드가 true여야 함
-    private boolean agreePrivacy = true; // 개인정보 수집 및 이용 동의 여부
+    // [변경] 프론트엔드 요청에 맞춰 개인정보 동의 필드 추가
+    @AssertTrue(message = "개인정보 수집 및 이용에 동의해야 합니다.")
+    private boolean privacyAgreed;
 }
