@@ -31,14 +31,14 @@ const SignupScreen = () => {
                 return;
         }
 
-        try {
+        
             const response = await axios.post(`${API_BASE_URL}/api/v1/auth/send-code`, {
                 email:email,
             });
-        
+            if(response.data.data === true){
             Alert.alert("인증코드가 발송되었습니다.");
             console.log("코드 발송 확인",response.data);
-        } catch (error) {
+        } else {
             console.log("인증 코드 오류:", error.response?.data || error);
 
         }
@@ -51,16 +51,17 @@ const SignupScreen = () => {
             Alert.alert("인증코드를 입력하세요");
             return;
         }
-        try {
+        
             const response = await axios.post(`${API_BASE_URL}/api/v1/auth/verify-code`, {
                 email:email,
                 code : eCode
             });
-            if (response.data.success) {
+            if(response.data.data === true){
                 setIsEVerified(true);
                 Alert.alert("이메일 인증이 완료되었습니다.");
+                console.log("이메일 인증 완료",response.data);
             }
-        } catch (error) {
+            else {
             Alert.alert("인증 코드 오류",error.response?.data?.error || "인증실패");
         }
     }
