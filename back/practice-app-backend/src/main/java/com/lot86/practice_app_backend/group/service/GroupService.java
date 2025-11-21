@@ -39,16 +39,24 @@ public class GroupService {
 
     /** 그룹 생성 (기존) */
     @Transactional
-    public AppGroup createGroup(GroupCreateRequest requestDto, UUID creatorUserId) {
-        AppUser creator = appUserRepository.findById(creatorUserId)
-                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다. ID: " + creatorUserId));
+public AppGroup createGroup(GroupCreateRequest requestDto, UUID creatorUserId) {
+    AppUser creator = appUserRepository.findById(creatorUserId)
+            .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다. ID: " + creatorUserId));
 
-        AppGroup newGroup = new AppGroup(requestDto.getName(), creator);
-        AppGroup savedGroup = appGroupRepository.save(newGroup);
+    // 1) 그룹 생성
+    AppGroup newGroup = new AppGroup(requestDto.getName(), creator);
+    AppGroup savedGroup = appGroupRepository.save(newGroup);
 
+    // 2) 생성자를 그룹 멤버(OWNER)로 추가 ← ***여기가 필수!***
+    GroupMember gm = new GroupMember();
+    gm.setGroupId(savedGroup.getGroupId());
+    gm.setUserId(creatorUserId);
+    gm.setRole("OWNER");
+    groupMemberRepository.save(gm);
 
-        return savedGroup;
-    }
+    return savedGroup;
+}
+
 
     /** 현재 사용자가 해당 그룹에서 OWNER / MANAGER 인지 체크 */
     private void assertManagerOrOwner(UUID groupId, UUID userId) {
