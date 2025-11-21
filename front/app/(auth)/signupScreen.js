@@ -4,12 +4,13 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Checkbox } from 'react-native-paper';
-import { API_BASE_URL } from '../../config/apiConfig'; // 1. API 설정 파일 import
+import { API_BASE_URL } from '../../config/apiConfig';
+// [추가] 자동 로그인을 위해 AuthProvider 사용 (백엔드가 토큰을 줄 경우 대비)
+import { useAuth } from '../../components/AuthProvider'; 
 
-// 컴포넌트 이름을 파일명과 일치시킴 (EmailScreen -> SignupScreen)
 const SignupScreen = () => {
-
     const router = useRouter();
+    const { signIn } = useAuth(); // 로그인 함수 가져오기
 
     const [email, setEmail] = useState('');
     const [name, setName] = useState('');
@@ -17,65 +18,86 @@ const SignupScreen = () => {
     const [passwordcheck, setPasswordcheck] = useState('');
     const [showpassword, setShowpassword] = useState(false);
     const [showpasswordcheck, setShowpasswordcheck] = useState(false);
-    const [togglebox,setTogglebox] = useState(false);
+    const [togglebox, setTogglebox] = useState(false);
     const [togglebox2, setTogglebox2] = useState(false);
-    const [eCode,setECode] = useState(''); //이메일 인증코드
-    const [isEVerified, setIsEVerified] = useState(false); //인증코드 확인
+    
+    const [eCode, setECode] = useState(''); 
+    
+    const [isEmailSent, setIsEmailSent] = useState(false); 
+    const [isEVerified, setIsEVerified] = useState(false); 
+    const [codeError, setCodeError] = useState('');        
 
-    //이메일 인증 발송
+    // 1. 이메일 인증번호 발송
     const sendEmail = async () => {
-        
         if (!email) {
-                Alert.alert("이메일을 입력해주세요!");
-                console.log("이메일 입력");
-                return;
-        }
-
-        
-            const response = await axios.post(`${API_BASE_URL}/api/v1/auth/send-code`, {
-                email:email,
-            });
-            if(response.data.data === true){
-            Alert.alert("인증코드가 발송되었습니다.");
-            console.log("코드 발송 확인",response.data);
-        } else {
-            console.log("인증 코드 오류:", error.response?.data || error);
-
-        }
-        
-    }
-
-    //이메일 인증 코드 확인
-    const verifyCode = async () => {
-        if (!eCode) {
-            Alert.alert("인증코드를 입력하세요");
+            Alert.alert("오류", "이메일을 입력해주세요!");
             return;
         }
-        
-            const response = await axios.post(`${API_BASE_URL}/api/v1/auth/verify-code`, {
-                email:email,
-                code : eCode
+
+        try {
+            const response = await axios.post(`${API_BASE_URL}/api/v1/auth/send-code`, {
+                email: email,
             });
-            if(response.data.data === true){
-                setIsEVerified(true);
-                Alert.alert("이메일 인증이 완료되었습니다.");
-                console.log("이메일 인증 완료",response.data);
+
+            if (response.data.data === true) {
+                Alert.alert("전송 완료", "인증번호가 전송되었습니다. 메일함을 확인해주세요.");
+                console.log("코드 발송 확인", response.data);
+                
+                setIsEmailSent(true);  
+                setIsEVerified(false); 
+                setECode('');
+                setCodeError('');
+            } else {
+                Alert.alert("오류", "인증번호 발송에 실패했습니다.");
             }
-            else {
-            Alert.alert("인증 코드 오류",error.response?.data?.error || "인증실패");
+
+        } catch (error) {
+            console.log("인증 코드 발송 오류:", error.response?.data || error);
+            Alert.alert("오류", "인증번호 발송 중 문제가 발생했습니다.");
         }
     }
 
+    // 2. 인증번호 확인
+    const verifyCode = async () => {
+        if (!eCode) {
+            setCodeError("인증코드를 입력하세요.");
+            return;
+        }
+
+        try {
+            const response = await axios.post(`${API_BASE_URL}/api/v1/auth/verify-code`, {
+                email: email,
+                code: eCode
+            });
+
+            if (response.data.data === true) {
+                setIsEVerified(true); 
+                setCodeError('');
+            } else {
+                setCodeError("인증번호가 일치하지 않습니다.");
+            }
+        } catch (error) {
+            const msg = error.response?.data?.error || "인증번호가 일치하지 않습니다.";
+            setCodeError(msg);
+            setIsEVerified(false);
+        }
+    }
+    const isPasswordMismatch = password && passwordcheck && password !== passwordcheck;
+
+    // 3. 회원가입 완료
     const handleSignup = async () => {
         if (!email || !name || !password || !passwordcheck) {
             Alert.alert("오류", "모든 필드를 입력해주세요.");
+            return;
+        }
+        if (!isEVerified) {
+            Alert.alert("오류", "이메일 인증을 완료해주세요.");
             return;
         }
         if (password !== passwordcheck) {
             Alert.alert("오류", "비밀번호가 일치하지 않습니다.");
             return;
         }
-        // [수정] 백엔드 DTO에 약관 동의 필드가 필요하므로 검증 유지
         if (!togglebox || !togglebox2) {
             Alert.alert("오류", "약관에 모두 동의해주세요.");
             return;
@@ -83,238 +105,290 @@ const SignupScreen = () => {
 
         const userData = {
             email: email,
-            
             name: name,
             password: password,
             termsAgreed: togglebox,
             privacyAgreed: togglebox2,
         };
 
-        console.log("서버로 보내는 데이터: ", userData);
-
         try {
-            // 2. [수정] API 주소 변경 (/v1 추가 및 apiConfig 사용)
-            console.log(`🌐 POST 요청 전송: ${API_BASE_URL}/api/v1/auth/signup`);
             const response = await axios.post(`${API_BASE_URL}/api/v1/auth/signup`, userData);
-            console.log("서버 응답 수신: ",response.data);
-
-            // 3. [수정] 백엔드 응답이 { data: null, error: null } 형식이 됨
-            if (response.data && response.data.error) {
-                // 이 경우는 거의 없지만, 성공 응답인데 error가 있는 경우
-                Alert.alert("회원가입 오류", response.data.error);
-                console.log("응답 오류: ", response.data.error);
-            } else {
-                Alert.alert("성공", "인증 메일을 발송했습니다. 메일함을 확인해주세요.");
-                // 4. [수정] 로그인 대신 이메일 확인 화면으로 이동
-                console.log("회원가입 성공: ");
-                router.push('checkScreen');
-                console.log("라우터 실행 됬다.")
+            
+            // [수정] 회원가입 성공 시 메인 화면으로 바로 이동
+            Alert.alert("환영합니다!", "회원가입이 완료되었습니다.");
+            
+            // (선택 사항) 만약 백엔드가 회원가입 응답으로 'token'을 준다면 여기서 자동 로그인 처리
+            if (response.data.token) {
+                await signIn(response.data.token);
             }
+
+            // 메인 화면으로 이동 (로그인 화면 X)
+            router.replace('(tabs)/mainHome'); 
 
         } catch (error) {
             if (error.response) {
-                // 5. [수정] 백엔드가 보내는 { error: "메시지" } 형식의 오류 처리
-                const errorMessage = error.response.data?.error || "서버 응답 오류"; // ?. 옵셔널 체이닝 추가
-                console.error('서버 응답 에러:', error.response.data); // data 전체 로그 확인
+                const errorMessage = error.response.data?.error || "서버 응답 오류";
                 Alert.alert("회원가입 오류", errorMessage);
             } else {
-                console.error('연결 오류:', error.message);
-                Alert.alert("연결 오류", "서버에 연결할 수 없습니다. IP 주소와 서버 상태를 확인하세요.");
+                Alert.alert("연결 오류", "서버에 연결할 수 없습니다.");
             }
         }
     };
-
 
     return(
         <View style = {styles.container}>
             <Text style = {styles.HeaderText}>반갑습니다. 정보를 입력해주세요!</Text>
 
-            
+            {/* --- 이메일 입력 --- */}
             <View style = {styles.inputContainer}>
-            <TextInput style = {styles.inputfiled}
-            placeholder='Email을 입력해주세요.'
-            placeholderTextColor={'#000000'}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            />
-            <Pressable style = {styles.verifyButton} onPress={sendEmail}>
-                <Text style = {styles.verifynextButton}>인증</Text>
-            </Pressable>
+                <TextInput 
+                    style = {styles.inputfiled}
+                    placeholder='Email을 입력해주세요.'
+                    placeholderTextColor={'#999'}
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    editable={!isEVerified}
+                />
+                <Pressable 
+                    style={[
+                        styles.verifyButton, 
+                        isEVerified ? styles.disabledButton : styles.activeButton 
+                    ]} 
+                    onPress={sendEmail}
+                    disabled={isEVerified}
+                >
+                    <Text style={styles.verifynextButton}>
+                        {isEVerified ? "완료" : (isEmailSent ? "재전송" : "인증번호 발송")}
+                    </Text>
+                </Pressable>
             </View>
 
-            <View style = {styles.inputContainer}>
-            <TextInput style = {styles.inputfiled}
-            placeholder='인증코드을 입력해주세요.'
-            placeholderTextColor={'#000000'}
-            value={eCode}
-            onChangeText={setECode}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            />
-            <Pressable style = {styles.verifyButton} onPress={verifyCode}>
-                <Text style = {styles.verifynextButton}>인증 완료!</Text>
-            </Pressable>
+            {/* --- [수정] 인증코드 입력 (항상 보임) --- */}
+            {/* 조건문 {isEmailSent && ...} 을 제거하여 항상 보이게 했습니다. */}
+            <View>
+                <View style={[styles.inputContainer, !isEmailSent && styles.inputDisabled]}> 
+                    <TextInput 
+                        style={styles.inputfiled}
+                        placeholder='인증코드를 입력해주세요.'
+                        placeholderTextColor={'#999'}
+                        value={eCode}
+                        onChangeText={(text) => {
+                            setECode(text);
+                            setCodeError('');
+                        }}
+                        keyboardType="number-pad"
+                        autoCapitalize="none"
+                        // [수정] 이메일 보내기 전이나, 인증 완료 후에는 수정 불가
+                        editable={isEmailSent && !isEVerified} 
+                    />
+                    <Pressable 
+                        style={[
+                            styles.verifyButton,
+                            (!eCode || isEVerified || !isEmailSent) ? styles.disabledButton : styles.activeButton 
+                        ]} 
+                        onPress={verifyCode}
+                        // [수정] 이메일 안 보냈거나, 빈칸이거나, 이미 완료됐으면 클릭 불가
+                        disabled={!isEmailSent || !eCode || isEVerified}
+                    >
+                        <Text style={styles.verifynextButton}>
+                            {isEVerified ? "인증됨" : "인증확인"}
+                        </Text>
+                    </Pressable>
+                </View>
+                
+                {/* 메시지 표시 영역 (높이 확보를 위해 View로 감쌈) */}
+                <View style={{height: 20}}> 
+                    {codeError ? <Text style={styles.errorText}>{codeError}</Text> : null}
+                    {isEVerified && <Text style={styles.successText}>이메일 인증이 완료되었습니다.</Text>}
+                </View>
             </View>
 
-            {isEVerified && (
-                <Text style = {styles.verifyText}>
-                    이메일 인증 완료
-                </Text>
-            )}
-
+            {/* --- 나머지 입력창 --- */}
             <TextInput style = {styles.input}
-            placeholder='닉네임을 입력해주세요.'
-            placeholderTextColor={'#000000'}
-            value={name}
-            onChangeText={setName}
+                placeholder='닉네임을 입력해주세요.'
+                placeholderTextColor={'#999'}
+                value={name}
+                onChangeText={setName}
             />
 
             <View style = {styles.passwordContainer}>
                 <TextInput style = {styles.passwordInput}
-                placeholder='비밀번호를 입력해주세요'
-                placeholderTextColor={'#000000'}
-                value = {password}
-                secureTextEntry = {!showpassword}
-                onChangeText={setPassword}
+                    placeholder='비밀번호를 입력해주세요'
+                    placeholderTextColor={'#999'}
+                    value = {password}
+                    secureTextEntry = {!showpassword}
+                    onChangeText={setPassword}
                 />
                 <TouchableOpacity onPress = {() => setShowpassword(!showpassword)}>
-                    <Ionicons name = {showpassword ? 'eye-off': 'eye'}
-                            size = {20} color = 'gray'></Ionicons>
+                    <Ionicons name = {showpassword ? 'eye-off': 'eye'} size = {20} color = 'gray' />
                 </TouchableOpacity>
-
             </View>
 
             <View style = {styles.passwordContainer}>
-                <TextInput style = {styles.passwordInput} placeholder='비밀번호를 다시 입력해주세요'
-                value = {passwordcheck}
-                placeholderTextColor={'#000000'}
-                secureTextEntry = {!showpasswordcheck}
-                onChangeText={setPasswordcheck}
+                <TextInput style = {styles.passwordInput} 
+                    placeholder='비밀번호를 다시 입력해주세요'
+                    placeholderTextColor={'#999'}
+                    value = {passwordcheck}
+                    secureTextEntry = {!showpasswordcheck}
+                    onChangeText={setPasswordcheck}
                 />
                 <TouchableOpacity onPress={() => setShowpasswordcheck(!showpasswordcheck)}>
-                    <Ionicons name = {showpasswordcheck ? 'eye-off' : 'eye'}
-                            size = {20} color = 'gray'></Ionicons>
+                    <Ionicons name = {showpasswordcheck ? 'eye-off' : 'eye'} size = {20} color = 'gray' />
                 </TouchableOpacity>
-
             </View>
 
-            <View style = {{flexDirection : 'row',alignItems:'center'}}>
+            <View style={{ marginBottom: 20, height: 20 }}> 
+                {isPasswordMismatch && (
+                    <Text style={styles.errorText}>비밀번호가 일치하지 않습니다.</Text>
+                )}
+            </View>
+
+            <View style = {{flexDirection : 'row', alignItems:'center', marginBottom: 5}}>
                 <Checkbox
-                status = {togglebox ? 'checked': 'unchecked'}
-                onPress = {() => setTogglebox(!togglebox)}
-                color = "#7DBCE9"/>
+                    status = {togglebox ? 'checked': 'unchecked'}
+                    onPress = {() => setTogglebox(!togglebox)}
+                    color = "#7DBCE9"/>
                 <Text style = {{marginLeft:8}}>서비스 이용약관 관련 전체 동의</Text>
             </View>
 
-            <View style = {{flexDirection : 'row',alignItems:'center'}}>
+            <View style = {{flexDirection : 'row', alignItems:'center'}}>
                 <Checkbox
-                status = {togglebox2 ? 'checked': 'unchecked'}
-                onPress = {() => setTogglebox2(!togglebox2)}
-                color = "#7DBCE9"/>
+                    status = {togglebox2 ? 'checked': 'unchecked'}
+                    onPress = {() => setTogglebox2(!togglebox2)}
+                    color = "#7DBCE9"/>
                 <Text style = {{marginLeft:8}}>개인정보 약관 전체 동의</Text>
             </View>
 
-            <Pressable style = {styles.Button} onPress={handleSignup}>
+            <Pressable 
+                style = {[styles.Button, !isEVerified && styles.disabledButton]} 
+                onPress={handleSignup}
+                disabled={!isEVerified}
+            >
                 <Text style = {styles.nextButton}>회원가입</Text>
             </Pressable>
-
 
         </View>
     )
 }
-// export 이름을 파일명과 일치
 export default SignupScreen;
 
-// 스타일 코드는 기존과 동일
-const styles  = StyleSheet.create({
-    container:{
-        flex: 1,
-        backgroundColor: 'white',
-        paddingTop: 50, // 상단 여백
-        paddingHorizontal: 20,},
-
-    input:{width: '100%',
-        height: 50,
-        backgroundColor: '#F5FFF5', // 이미지의 연한 녹색 배경
-        borderRadius: 8,
-        paddingHorizontal: 15,
-        fontSize: 16,
-        color: '#333',
-        borderWidth: 1,
-        borderColor: 'transparent',
-        marginBottom:20 }, // 간격 조정
-    passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5FFF5',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    paddingHorizontal: 15,
-    height: 50,
-    marginBottom: 20, // 간격 조정
-    },
-    passwordInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-    },
-    Button:{width: '100%',
-        height: 50,
-        backgroundColor: '#7DBCE9', // 이미지의 파란색 계열 버튼
-        borderRadius: 8,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 40, },
-
-    nextButton:{color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',},
-
-    HeaderText: {fontSize: 32,
-        fontWeight: 'bold',
-        color: 'black',
-        marginBottom: 40, // 입력 필드와의 간격
-        lineHeight: 40, },
-inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: "100%",
-    height: 50,
-    backgroundColor: "#F5FFF5",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "transparent",
-    marginBottom: 20,
-    paddingHorizontal: 10,
-},
-inputfiled:{
-    flex: 1,
-    fontSize: 16,
-    color: "#333",
-},
-verifyButton:{
-    backgroundColor: "#7DBCE9",
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 6,
-    marginLeft: 10,
-    justifyContent: "center",
-    alignItems: "center",
-},
-verifynextButton: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "bold",
-},
-verifyText: {
-    color: "#28A745",           // 초록색 ✔ 성공 표시
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 15,
-    marginLeft: 5
-}
+const styles = StyleSheet.create({
+    container:{
+        flex: 1,
+        backgroundColor: 'white',
+        paddingTop: 50,
+        paddingHorizontal: 20,
+    },
+    HeaderText: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: 'black',
+        marginBottom: 30,
+        lineHeight: 36, 
+    },
+    inputContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        width: "100%",
+        height: 50,
+        backgroundColor: "#F5FFF5",
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: "transparent",
+        // [핵심] 모든 입력창 간격을 15로 통일 (에러 메시지 공간 포함)
+        marginBottom: 15, 
+        paddingHorizontal: 10,
+    },
+    // [추가] 비활성화된 입력창 스타일 (배경색을 조금 어둡게)
+    inputDisabled: {
+        backgroundColor: "#F0F0F0",
+        borderColor: "#E0E0E0",
+    },
+    inputfiled:{
+        flex: 1,
+        fontSize: 16,
+        color: "#333",
+        height: '100%',
+    },
+    input: {
+        width: '100%',
+        height: 50,
+        backgroundColor: '#F5FFF5',
+        borderRadius: 8,
+        paddingHorizontal: 15,
+        fontSize: 16,
+        color: '#333',
+        borderWidth: 1,
+        borderColor: 'transparent',
+        // [핵심] 여기도 15로 통일
+        marginBottom: 15, 
+        // marginTop 제거 (간격 통일을 위해)
+    },
+    verifyButton:{
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        borderRadius: 6,
+        marginLeft: 10,
+        justifyContent: "center",
+        alignItems: "center",
+        minWidth: 80,
+    },
+    activeButton: {
+        backgroundColor: "#7DBCE9",
+    },
+    disabledButton: {
+        backgroundColor: "#D3D3D3",
+    },
+    verifynextButton: {
+        color: "white",
+        fontSize: 13,
+        fontWeight: "bold",
+    },
+    successText: {
+        color: "#4CAF50",
+        fontSize: 13,
+        marginLeft: 5,
+        marginBottom: 5,
+        fontWeight: "600",
+    },
+    errorText: {
+        color: "#F44336",
+        fontSize: 13,
+        marginLeft: 5,
+        // marginBottom 제거 (부모 View에서 처리)
+        fontWeight: "600",
+    },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F5FFF5',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: 'transparent',
+        paddingHorizontal: 15,
+        height: 50,
+        marginBottom: 20,
+    },
+    passwordInput: {
+        flex: 1,
+        fontSize: 16,
+        color: '#333',
+        height: '100%',
+    },
+    Button:{
+        width: '100%',
+        height: 50,
+        backgroundColor: '#7DBCE9',
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 30, 
+    },
+    nextButton:{
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
 });
-
