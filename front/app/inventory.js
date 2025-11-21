@@ -9,9 +9,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import TopHeader from "../../components/TopHeader";
+import TopHeader from "../components/TopHeader";
 
-import RoomTabs from "../../components/home/RoomTabs";
+import RoomTabs from "../components/room/RoomTabs";
 
 // 샘플 데이터
 const ALL_ITEMS = [
@@ -65,7 +65,7 @@ export default function InventoryScreen() {
   return (
     <SafeAreaView style={styles.safeContainer}>
       <TopHeader
-        showBack={false}
+        showBack={true}
         showIcons={true}
         title="채움" // 방 제목(추후 사용자의 방 제목으로 변경)
       />
