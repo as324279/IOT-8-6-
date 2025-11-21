@@ -4,12 +4,15 @@ import { useEffect, useState } from 'react';
 import { Alert, ScrollView, View, Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // [분리된 컴포넌트 임포트]
 import TopHeader from '../../components/TopHeader';
 import { styles } from '../../components/home/HomeStyles';
 import RoomList from '../../components/home/RoomList';
 import { InputModal, ResultModal } from '../../components/home/GroupModals';
+import { API_BASE_URL } from '../../config/apiConfig';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowAlert: true, shouldPlaySound: true, shouldSetBadge: false }),
@@ -19,11 +22,7 @@ const MainHome = () => {
     const router = useRouter();
     
     // --- State 관리 ---
-    const [rooms, setRooms] = useState([
-        { id: '1', name: '우리집', memberCount: 4 },
-        { id: '2', name: 'AAA', memberCount: 2 },
-        { id: '3', name: '자취방', memberCount: 1 },
-    ]);
+    const [rooms, setRooms] = useState([]);
 
     const [isModal, setIsModal] = useState(false);
     const [modalType, setModalType] = useState('');
@@ -59,27 +58,67 @@ const MainHome = () => {
         console.log(`${roomName} 방으로 입장합니다.`);
         router.push('/inventory');
     };
-
+    //그룹 만들기 -> 요청은 api/v1/groups
     const handleCreateGroup = async () => {
         if (!ismodalValue.trim()) {
             Alert.alert("오류", "그룹 이름을 입력해주세요.");
             return;
         }
         setIsLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        const generatedCode = "NEW-" + Math.floor(Math.random() * 10000);
-        const groupName = ismodalValue;
-        const newRoomId = Date.now().toString();
-        const newRoom = { id: newRoomId, name: groupName, memberCount: 1 };
-        
-        setRooms(prev => [...prev, newRoom]); 
 
-        setIsLoading(false);
-        CloseModal();
-        setInviteCode(generatedCode);
-        setCreatedGroupName(groupName);
-        setIsResultModal(true);
+
+        
+        try {
+            const token = await AsyncStorage.getItem("userToken");
+            if (!token) {
+                Alert.alert("사용자 정보가 필요해요!");
+                setIsLoading(false);
+                return;
+            }
+
+            //1.그룹 생성
+            const createGroupreq = await axios.post(
+            `${API_BASE_URL}/api/v1/groups`,
+            { name: ismodalValue },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+            console.log("그룹 생성",createGroupreq.data);
+
+            console.log("★★★ 그룹 생성 전체 응답 구조 ★★★");
+            console.log(JSON.stringify(createGroupreq.data, null, 2));
+
+            const createdGroup = createGroupreq.data.data;
+            const groupId = createdGroup.groupId;
+            //2. 초대코드 생성
+            const createinvitereq = await axios.post(`${API_BASE_URL}/api/v1/groups/${groupId}/invites`,
+                {}, {headers: { Authorization: `Bearer ${token}`}}
+            );
+
+            console.log("초대 코드 생성", createinvitereq.data);
+            const inviteCode = createinvitereq.data.data.code;
+
+            setIsLoading(false);
+            CloseModal();
+
+            setRooms(prev => [
+                ...prev,
+                {
+                    id:groupId,
+                    name:createdGroup.name,
+                    memberCount:1
+                }
+            ]);
+
+             setCreatedGroupName(createdGroup.name);
+            setInviteCode(inviteCode);
+            setIsResultModal(true);
+
+        } catch (error) {
+            console.log("그룹 생성 오류!",error.response?.data || error);
+            setIsLoading(false);
+            Alert.alert("오류", error.response?.data?.error || "그룹 생성 실패!");
+        }
     }
 
     const handleJoinGroup = async () => {
