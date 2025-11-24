@@ -1,62 +1,84 @@
-// components/home/RoomTabs.js
-
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, TouchableOpacity, Text, StyleSheet, View } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons'; 
 
-const CATEGORIES = ['전체', '거실', '주방', '욕실'];
-
-// 부모(inventory.js)로부터 '현재 선택된 탭'과 '탭 변경 함수'를 props로 받음
-export default function RoomTabs({ selectedCategory, onSelectCategory }) {
+const RoomTabs = ({ categories, selectedCategory, onSelectCategory, onAddCategory }) => {
+  
   return (
-    <View style={styles.categoryContainer}>
-      {CATEGORIES.map((category) => (
-        <TouchableOpacity
-          key={category}
-          style={[
-            styles.categoryButton,
-            selectedCategory === category && styles.categoryButtonActive,
-          ]}
-          onPress={() => onSelectCategory(category)} // 탭 클릭 시 부모의 state 변경
-        >
-          <Text
+    <View style={styles.wrapper}>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+      >
+        {categories.map((category) => (
+          <TouchableOpacity
+            key={category}
             style={[
-              styles.categoryText,
-              selectedCategory === category && styles.categoryTextActive,
+              styles.tab,
+              selectedCategory === category && styles.selectedTab
             ]}
+            onPress={() => onSelectCategory(category)}
           >
-            {category}
-          </Text>
+            <Text style={[
+              styles.tabText,
+              selectedCategory === category && styles.selectedTabText
+            ]}>
+              {category}
+            </Text>
+          </TouchableOpacity>
+        ))}
+
+        <TouchableOpacity style={[styles.tab, styles.addTab]} onPress={onAddCategory}>
+           <MaterialIcons name="add" size={20} color="#555" />
         </TouchableOpacity>
-      ))}
+
+      </ScrollView>
     </View>
   );
-}
+};
 
-// 카테고리 탭에만 필요한 스타일
 const styles = StyleSheet.create({
-  categoryContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+  wrapper: {
+      height: 50,
+      marginTop: 10,
+      marginBottom: 10,
   },
-  categoryButton: {
+  container: {
     flex: 1,
-    paddingVertical: 14,
+  },
+  contentContainer: {
+    paddingHorizontal: 15,
     alignItems: 'center',
+  },
+  tab: {
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0', 
+    marginRight: 10,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  categoryButtonActive: {
-    borderBottomWidth: 3,
-    borderBottomColor: '#5AC8FA',
+  // 추가버튼 
+  addTab: {
+      paddingHorizontal: 12, 
+      backgroundColor: '#e0e0e0', 
   },
-  categoryText: {
+  selectedTab: {
+    backgroundColor: '#5DADE2',
+  },
+  // 기본 탭 글자
+  tabText: {
     fontSize: 16,
-    color: '#8e8e8e',
+    color: '#555',
+    fontWeight: '600',
   },
-  categoryTextActive: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: 'bold',
+  // 선택된 탭 글자
+  selectedTabText: {
+    color: '#fff',
   },
 });
+
+export default RoomTabs;
