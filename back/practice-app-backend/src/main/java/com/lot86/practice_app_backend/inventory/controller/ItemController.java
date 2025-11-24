@@ -3,12 +3,12 @@ package com.lot86.practice_app_backend.inventory.controller;
 import com.lot86.practice_app_backend.common.ApiResponse;
 import com.lot86.practice_app_backend.inventory.dto.ItemCreateRequest;
 import com.lot86.practice_app_backend.inventory.dto.ItemResponse;
+import com.lot86.practice_app_backend.inventory.dto.ItemUpdateRequest;
 import com.lot86.practice_app_backend.inventory.service.ItemService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import com.lot86.practice_app_backend.inventory.dto.ItemUpdateRequest;
 
 import java.util.List;
 import java.util.UUID;
@@ -27,7 +27,7 @@ public class ItemController {
         return (UUID) authentication.getPrincipal();
     }
 
-    // 1. 물품 등록 (특정 그룹에)
+    // 1. 물품 등록
     // POST /api/v1/groups/{groupId}/items
     @PostMapping("/groups/{groupId}/items")
     public ApiResponse<ItemResponse> createItem(
@@ -56,11 +56,18 @@ public class ItemController {
         return ApiResponse.ok(item);
     }
 
-    // 4. 물품 삭제
+    // 4. 물품 삭제 (수정됨: 이력 기록을 위해 userId 전달)
     // DELETE /api/v1/items/{itemId}
     @DeleteMapping("/items/{itemId}")
-    public ApiResponse<Void> deleteItem(@PathVariable UUID itemId) {
-        itemService.deleteItem(itemId);
+    public ApiResponse<Void> deleteItem(
+            @PathVariable UUID itemId,
+            Authentication authentication // [추가] 인증 정보 받기
+    ) {
+        UUID userId = getCurrentUserId(authentication); // [추가] 사용자 ID 추출
+
+        // 기존 deleteItem(itemId) 대신 이력 저장 기능이 있는 메서드 호출
+        itemService.deleteItemWithHistory(itemId, userId);
+
         return ApiResponse.ok(null);
     }
 

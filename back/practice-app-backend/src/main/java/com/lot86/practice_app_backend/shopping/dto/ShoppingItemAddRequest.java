@@ -24,4 +24,6 @@ public class ShoppingItemAddRequest {
 
     // (선택) 기존 재고 아이템과 연결하려면 ID를 보냄
     private UUID linkedItemId;
+
+    private String note; // [추가] 메모 필드2025.11.21 ㅇㅅㅂ
 }

@@ -55,6 +55,9 @@ public class ShoppingItem {
     @Column(name = "purchased_at")
     private OffsetDateTime purchasedAt;
 
+    @Column(name = "note", length = 255)
+    private String note; // [추가]
+
     @PrePersist
     public void prePersist() {
         if (this.itemRowId == null) this.itemRowId = UUID.randomUUID();

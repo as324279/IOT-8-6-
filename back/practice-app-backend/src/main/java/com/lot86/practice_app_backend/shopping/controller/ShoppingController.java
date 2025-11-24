@@ -70,4 +70,18 @@ public class ShoppingController {
         shoppingService.deleteItem(itemRowId);
         return ApiResponse.ok(null);
     }
+
+    // 6. 쇼핑리스트 상태 변경 (확정/종료 등)
+    // PATCH /api/v1/shopping-lists/{listId}/status
+    @PatchMapping("/shopping-lists/{listId}/status")
+    public ApiResponse<ShoppingListResponse> updateStatus(
+            @PathVariable UUID listId,
+            @RequestBody @Valid ShoppingListStatusRequest request,
+            Authentication authentication
+    ) {
+        UUID userId = getCurrentUserId(authentication);
+        return ApiResponse.ok(shoppingService.updateListStatus(listId, userId, request.getStatus()));
+    }
+
+
 }

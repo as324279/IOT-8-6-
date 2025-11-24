@@ -1,31 +1,38 @@
+--1.6버전
+--변경 사항: app_group 테이블의 created_by FK 제약조건을
+-- ON DELETE CASCADE로 변경하여 회원 탈퇴 시 그룹도 함께 삭제되도록 수정했습니다.
+
+-- ========================================================
 -- 1. 스키마 초기화 (기존 데이터 삭제)
-DROP SCHEMA public CASCADE;
+-- ========================================================
+DROP SCHEMA IF EXISTS public CASCADE;
 CREATE SCHEMA public;
 
--- 2. 확장 모듈
+-- 확장 모듈 설치
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+
 -- ========================================================
--- 3. 사용자 & 인증 (Users & Auth) - [팀원 로직 반영]
+-- 2. 사용자 및 인증 (Users & Auth)
 -- ========================================================
 
--- 3-1. app_user (email_verified 컬럼 추가됨)
+-- [사용자] app_user
 CREATE TABLE app_user (
                           user_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                           email         VARCHAR(320) NOT NULL,
                           password_hash TEXT NOT NULL,
                           name          VARCHAR(30) NOT NULL,
                           profile_image TEXT,
-                          email_verified BOOLEAN NOT NULL DEFAULT FALSE, -- [팀원 추가]
+                          email_verified BOOLEAN NOT NULL DEFAULT FALSE,
                           created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
                           updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE UNIQUE INDEX ux_app_user_email_nocase ON app_user (LOWER(email));
 
--- 3-2. email_verification (user_id FK 삭제 -> email 사용)
+-- [이메일 인증] email_verification (팀원 로직: user_id 대신 email 사용)
 CREATE TABLE email_verification (
                                     token_id   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                                    email      VARCHAR(320) NOT NULL,   -- [팀원 변경] 가입 전이라 user_id가 없음 -> email로 식별
+                                    email      VARCHAR(320) NOT NULL, -- 가입 전 식별자
                                     token      VARCHAR(255) NOT NULL,
                                     purpose    VARCHAR(20) NOT NULL,
                                     new_email  VARCHAR(320),
@@ -35,35 +42,34 @@ CREATE TABLE email_verification (
                                     CONSTRAINT email_verification_purpose_check
                                         CHECK (purpose IN ('signup', 'verify_email', 'reset_password', 'change_email'))
 );
--- (주의: 여기엔 user_id FK가 없습니다!)
 
--- 3-3. user_session
+-- [세션] user_session
 CREATE TABLE user_session (
                               session_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                              user_id    UUID NOT NULL,
+                              user_id    UUID NOT NULL REFERENCES app_user(user_id) ON DELETE CASCADE,
                               device_info TEXT,
                               ip_addr    INET,
                               created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
                               last_seen  TIMESTAMPTZ NOT NULL DEFAULT now(),
                               revoked    BOOLEAN NOT NULL DEFAULT FALSE
 );
-ALTER TABLE user_session ADD CONSTRAINT user_session_user_id_fkey FOREIGN KEY (user_id) REFERENCES app_user(user_id) ON DELETE CASCADE;
 
 
 -- ========================================================
--- 4. 나머지 테이블 (그룹, 물품, 쇼핑 - 작성자님 기존 코드)
+-- 3. 그룹 및 멤버십 (Groups & Membership)
 -- ========================================================
 
--- app_group
+-- [그룹] app_group
+-- [v1.6 변경] ON DELETE CASCADE 추가 (회원 탈퇴 시 그룹도 자동 삭제)
 CREATE TABLE app_group (
                            group_id    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                            name        VARCHAR(100) NOT NULL,
-                           created_by  UUID NOT NULL REFERENCES app_user(user_id),
+                           created_by  UUID NOT NULL REFERENCES app_user(user_id) ON DELETE CASCADE,
                            created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
                            dissolved_at TIMESTAMPTZ
 );
 
--- group_member
+-- [멤버] group_member
 CREATE TABLE group_member (
                               group_id  UUID NOT NULL REFERENCES app_group(group_id) ON DELETE CASCADE,
                               user_id   UUID NOT NULL REFERENCES app_user(user_id) ON DELETE CASCADE,
@@ -72,7 +78,7 @@ CREATE TABLE group_member (
                               PRIMARY KEY (group_id, user_id)
 );
 
--- invite_code
+-- [초대코드] invite_code
 CREATE TABLE invite_code (
                              code_id    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                              group_id   UUID NOT NULL REFERENCES app_group(group_id) ON DELETE CASCADE,
@@ -85,7 +91,7 @@ CREATE TABLE invite_code (
                              status     VARCHAR(12) NOT NULL DEFAULT 'ACTIVE'
 );
 
--- invite_redeem
+-- [초대사용이력] invite_redeem
 CREATE TABLE invite_redeem (
                                redeem_id   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                                code_id     UUID NOT NULL REFERENCES invite_code(code_id) ON DELETE CASCADE,
@@ -94,7 +100,12 @@ CREATE TABLE invite_redeem (
                                redeemed_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- category
+
+-- ========================================================
+-- 4. 재고 관리 (Inventory)
+-- ========================================================
+
+-- [카테고리] category
 CREATE TABLE category (
                           category_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                           group_id    UUID NOT NULL REFERENCES app_group(group_id) ON DELETE CASCADE,
@@ -102,7 +113,7 @@ CREATE TABLE category (
                           UNIQUE (group_id, name)
 );
 
--- storage_location
+-- [보관장소] storage_location
 CREATE TABLE storage_location (
                                   location_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                                   group_id    UUID NOT NULL REFERENCES app_group(group_id) ON DELETE CASCADE,
@@ -111,7 +122,7 @@ CREATE TABLE storage_location (
                                   UNIQUE (group_id, name)
 );
 
--- item
+-- [물품] item
 CREATE TABLE item (
                       item_id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                       group_id     UUID NOT NULL REFERENCES app_group(group_id) ON DELETE CASCADE,
@@ -131,7 +142,7 @@ CREATE TABLE item (
                       UNIQUE (group_id, name, unit)
 );
 
--- item_event
+-- [물품이력] item_event
 CREATE TABLE item_event (
                             event_id   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                             item_id    UUID NOT NULL REFERENCES item(item_id) ON DELETE CASCADE,
@@ -143,24 +154,32 @@ CREATE TABLE item_event (
                             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- shopping_list
+
+-- ========================================================
+-- 5. 쇼핑 리스트 (Shopping)
+-- ========================================================
+
+-- [쇼핑리스트] shopping_list
 CREATE TABLE shopping_list (
                                list_id     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                                group_id    UUID NOT NULL REFERENCES app_group(group_id) ON DELETE CASCADE,
                                title       VARCHAR(120) NOT NULL,
                                status      VARCHAR(16) NOT NULL DEFAULT 'DRAFT',
+                               confirmed_by UUID REFERENCES app_user(user_id),
+                               confirmed_at TIMESTAMPTZ,
                                created_by  UUID NOT NULL REFERENCES app_user(user_id),
                                created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
                                updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- shopping_item
+-- [쇼핑항목] shopping_item
 CREATE TABLE shopping_item (
                                item_row_id   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                                list_id       UUID NOT NULL REFERENCES shopping_list(list_id) ON DELETE CASCADE,
                                item_name     VARCHAR(120) NOT NULL,
                                desired_qty   NUMERIC(12,3) NOT NULL,
                                unit          VARCHAR(16) NOT NULL DEFAULT 'ea',
+                               note          VARCHAR(255), -- 메모 기능
                                linked_item   UUID REFERENCES item(item_id),
                                assignee_id   UUID REFERENCES app_user(user_id),
                                status        VARCHAR(16) NOT NULL DEFAULT 'PENDING',
@@ -168,20 +187,105 @@ CREATE TABLE shopping_item (
                                purchased_at  TIMESTAMPTZ
 );
 
--- purchase_history
+-- [쇼핑댓글] shopping_comment
+CREATE TABLE shopping_comment (
+                                  comment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                  list_id    UUID NOT NULL REFERENCES shopping_list(list_id) ON DELETE CASCADE,
+                                  author_id  UUID NOT NULL REFERENCES app_user(user_id) ON DELETE SET NULL,
+                                  body       TEXT NOT NULL,
+                                  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- [구매이력] purchase_history
 CREATE TABLE purchase_history (
                                   purchase_id  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                                   group_id     UUID NOT NULL REFERENCES app_group(group_id) ON DELETE CASCADE,
                                   item_name    VARCHAR(120) NOT NULL,
                                   qty          NUMERIC(12,3) NOT NULL,
                                   unit         VARCHAR(16) NOT NULL DEFAULT 'ea',
+                                  price_total  NUMERIC(12,2),
+                                  currency     VARCHAR(8) DEFAULT 'KRW',
                                   purchased_by UUID REFERENCES app_user(user_id),
                                   purchased_at TIMESTAMPTZ NOT NULL DEFAULT now(),
                                   linked_item  UUID REFERENCES item(item_id),
                                   source_list  UUID REFERENCES shopping_list(list_id)
 );
 
--- Function & Trigger (재고 자동 반영)
+
+-- ========================================================
+-- 6. 알림 및 설정 (Notification)
+-- ========================================================
+
+-- [알림설정] notification_pref
+CREATE TABLE notification_pref (
+                                   user_id      UUID PRIMARY KEY REFERENCES app_user(user_id) ON DELETE CASCADE,
+                                   push_enabled  BOOLEAN NOT NULL DEFAULT TRUE,
+                                   email_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+                                   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- [알림함] notification
+CREATE TABLE notification (
+                              notif_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                              user_id  UUID NOT NULL REFERENCES app_user(user_id) ON DELETE CASCADE,
+                              topic    VARCHAR(24) NOT NULL,
+                              title    TEXT NOT NULL,
+                              body     TEXT NOT NULL,
+                              payload  JSONB,
+                              sent_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+                              read_at  TIMESTAMPTZ,
+                              CONSTRAINT notification_topic_check CHECK (topic IN ('LOW_STOCK','EXPIRY_SOON','INVITE_EXPIRY','NEW_MEMBER','LIST_CONFIRMED','PURCHASE_DONE','SYSTEM'))
+);
+CREATE INDEX idx_notification_user_time ON notification(user_id, sent_at DESC);
+
+
+-- ========================================================
+-- 7. 감사 및 에러 로그 (Logs)
+-- ========================================================
+
+-- [감사로그] audit_log
+CREATE TABLE audit_log (
+                           log_id      BIGSERIAL PRIMARY KEY,
+                           occurred_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                           actor_id    UUID REFERENCES app_user(user_id) ON DELETE SET NULL,
+                           group_id    UUID REFERENCES app_group(group_id) ON DELETE SET NULL,
+                           entity_type VARCHAR(24) NOT NULL,
+                           entity_id   UUID,
+                           action      VARCHAR(16) NOT NULL,
+                           details     JSONB
+);
+
+-- [에러로그] error_log
+CREATE TABLE error_log (
+                           error_id   BIGSERIAL PRIMARY KEY,
+                           occurred_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                           level      VARCHAR(10) NOT NULL,
+                           message    TEXT NOT NULL,
+                           stacktrace TEXT,
+                           context    JSONB,
+                           CONSTRAINT error_log_level_check CHECK (level IN ('INFO','WARN','ERROR','FATAL'))
+);
+
+
+-- ========================================================
+-- 8. 함수 및 트리거 (Functions & Triggers)
+-- ========================================================
+
+-- [함수] 그룹 생성 시 생성자를 자동으로 OWNER로 설정
+CREATE OR REPLACE FUNCTION ensure_group_owner()
+RETURNS TRIGGER AS $$
+BEGIN
+INSERT INTO group_member(group_id, user_id, role)
+VALUES (NEW.group_id, NEW.created_by, 'OWNER')
+    ON CONFLICT DO NOTHING;
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_group_owner AFTER INSERT ON app_group FOR EACH ROW EXECUTE FUNCTION ensure_group_owner();
+
+
+-- [함수] 쇼핑 구매 완료 시 -> 재고 증가 및 구매 이력 저장 (핵심 로직)
 CREATE OR REPLACE FUNCTION on_shopping_item_purchased()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -200,9 +304,18 @@ RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_shopping_item_purchased
-    AFTER UPDATE ON shopping_item
-    FOR EACH ROW EXECUTE FUNCTION on_shopping_item_purchased();
+CREATE TRIGGER trg_shopping_item_purchased AFTER UPDATE ON shopping_item FOR EACH ROW EXECUTE FUNCTION on_shopping_item_purchased();
 
 
-ALTER TABLE shopping_item ADD COLUMN note VARCHAR(255);--쇼핑리스트 메모기능추가
+-- [함수] updated_at 자동 갱신
+CREATE OR REPLACE FUNCTION touch_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at := now();
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_touch_user BEFORE UPDATE ON app_user FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+CREATE TRIGGER trg_touch_item BEFORE UPDATE ON item FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+CREATE TRIGGER trg_touch_shopping_list BEFORE UPDATE ON shopping_list FOR EACH ROW EXECUTE FUNCTION touch_updated_at();

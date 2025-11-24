@@ -78,6 +78,7 @@ public class ShoppingService {
         item.setItemName(request.getItemName());
         item.setDesiredQty(request.getDesiredQty());
         item.setUnit(request.getUnit());
+        item.setNote(request.getNote()); // [추가] 메모 저장
         item.setAssignee(user);
 
         if (request.getLinkedItemId() != null) {
@@ -114,4 +115,31 @@ public class ShoppingService {
     public void deleteItem(UUID itemRowId) {
         itemRepository.deleteById(itemRowId);
     }
+
+    /** 쇼핑리스트 상태 변경 (확정, 종료 등) */
+    @Transactional
+    public ShoppingListResponse updateListStatus(UUID listId, UUID userId, String newStatus) {
+        ShoppingList list = listRepository.findById(listId)
+                .orElseThrow(() -> new IllegalArgumentException("리스트를 찾을 수 없습니다."));
+
+        // 상태 변경
+        list.setStatus(newStatus);
+
+        // 만약 '확정(CONFIRMED)' 상태로 바꾸는 거라면, 확정자(confirmedBy)와 시간도 기록
+        if ("CONFIRMED".equals(newStatus)) {
+            AppUser user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+            list.setConfirmedBy(user);
+            list.setConfirmedAt(OffsetDateTime.now());
+        }
+
+        // DTO 변환해서 반환 (아이템 목록은 다시 조회해서 채워줌)
+        List<ShoppingItem> items = itemRepository.findByShoppingList_ListId(listId);
+        List<ShoppingItemResponse> itemDtos = items.stream()
+                .map(ShoppingItemResponse::fromEntity)
+                .collect(Collectors.toList());
+
+        return ShoppingListResponse.fromEntity(list, itemDtos);
+    }
+
 }

@@ -45,6 +45,14 @@ public class GroupController {
                 .body(ApiResponse.ok(responseDto));
     }
 
+    //내 그룹 목록 조회 20251122새롭게 추가함.
+    @GetMapping
+    public ApiResponse<List<GroupCreateResponse>> getMyGroups(Authentication authentication) {
+        UUID currentUserId = getCurrentUserId(authentication);
+        List<GroupCreateResponse> myGroups = groupService.getMyGroups(currentUserId);
+        return ApiResponse.ok(myGroups);
+    }
+
     /** 1) 초대코드 생성  (POST /api/v1/groups/{groupId}/invites) */
     @PostMapping("/{groupId}/invites")
     public ApiResponse<GroupInviteCreateResponse> createInvite(

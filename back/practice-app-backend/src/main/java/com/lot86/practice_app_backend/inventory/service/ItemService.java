@@ -21,6 +21,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.lot86.practice_app_backend.inventory.entity.ItemEvent;
+import com.lot86.practice_app_backend.inventory.repo.ItemEventRepository;
+import java.math.BigDecimal;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -31,6 +35,8 @@ public class ItemService {
     private final StorageLocationRepository locationRepository;
     private final AppGroupRepository groupRepository;
     private final AppUserRepository userRepository;
+
+    private final ItemEventRepository itemEventRepository;
 
     /**
      * 물품 등록
@@ -97,14 +103,50 @@ public class ItemService {
         return ItemResponse.fromEntity(item);
     }
 
-    /**
-     * 물품 삭제
-     */
+    /*물품 삭제
+
     @Transactional
     public void deleteItem(UUID itemId) {
         itemRepository.deleteById(itemId);
     }
+    */
 
+    /*
+    [추가] 물품 삭제 (이력 포함) - 추후 Controller에서 userId를 받아 이 메서드를 사용하면 좋습니다.
+
+    @Transactional
+    public void deleteItemWithHistory(UUID itemId, UUID userId) {
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 물품입니다."));
+        AppUser actor = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        // 삭제 전 기록 (수량만큼 마이너스 처리)
+        itemEventRepository.save(new ItemEvent(item, actor, "DELETE", item.getQuantity().negate()));
+
+        itemRepository.delete(item);
+    }*/
+    /**
+     * [수정11.24 db에서 실제로 삭제는 안함. 안보이게 금만] 물품 삭제 (Soft Delete: 상태만 변경)
+     * - 실제 DB 삭제(delete)는 하지 않고, 상태를 'DEPLETED'로 바꿉니다.
+     * - 이렇게 해야 이력(ItemEvent)이 아이템을 계속 참조할 수 있어 에러가 안 납니다.
+     */
+    @Transactional
+    public void deleteItemWithHistory(UUID itemId, UUID userId) {
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 물품입니다."));
+        AppUser actor = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        // 1. 상태 변경 (삭제된 것처럼 처리)
+        item.setStatus("DEPLETED");
+
+        // 2. 삭제 이력 기록
+        // (수량을 0으로 바꾸는 게 아니라 '삭제됨' 이벤트만 기록)
+        itemEventRepository.save(new ItemEvent(item, actor, "DELETE", BigDecimal.ZERO));
+
+        // 3. 진짜 삭제(delete) 코드는 제거함!
+    }
 
     /**
      * 물품 수정
@@ -115,10 +157,14 @@ public class ItemService {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 물품입니다."));
 
-        // (선택) 권한 체크: 요청한 유저가 이 그룹의 멤버인지 확인하는 로직이 있으면 더 좋습니다.
-        // 지금은 생략하고 진행합니다.
+        // 2. 수정자(Actor) 조회
+        AppUser actor = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-        // 2. 카테고리 변경 (입력된 경우만)
+        // [기록용] 기존 수량 저장
+        BigDecimal oldQty = item.getQuantity();
+
+        // 3. 카테고리 변경
         if (request.getCategoryName() != null) {
             String catName = request.getCategoryName().trim();
             if (!catName.isEmpty()) {
@@ -126,11 +172,11 @@ public class ItemService {
                         .orElseGet(() -> categoryRepository.save(new Category(item.getGroup(), catName)));
                 item.setCategory(category);
             } else {
-                item.setCategory(null); // 빈 문자열이면 카테고리 해제
+                item.setCategory(null);
             }
         }
 
-        // 3. 보관장소 변경 (입력된 경우만)
+        // 4. 보관장소 변경
         if (request.getLocationName() != null) {
             String locName = request.getLocationName().trim();
             if (!locName.isEmpty()) {
@@ -142,7 +188,7 @@ public class ItemService {
             }
         }
 
-        // 4. 나머지 필드 업데이트 (null이 아닌 경우에만 업데이트하거나, 덮어쓰기)
+        // 5. 나머지 필드 업데이트
         if (request.getName() != null) item.setName(request.getName());
         if (request.getQuantity() != null) item.setQuantity(request.getQuantity());
         if (request.getUnit() != null) item.setUnit(request.getUnit());
@@ -152,7 +198,22 @@ public class ItemService {
         if (request.getPhotoUrl() != null) item.setPhotoUrl(request.getPhotoUrl());
         if (request.getBarcode() != null) item.setBarcode(request.getBarcode());
 
-        // Dirty Checking으로 인해 save() 호출 없이도 트랜잭션 종료 시 자동 업데이트됨
+
+        //수량이 0이하가 되면 자동으로 depleted상태로 변경
+        if (item.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
+            item.setStatus("DEPLETED");
+        } else if ("DEPLETED".equals(item.getStatus()) && item.getQuantity().compareTo(BigDecimal.ZERO) > 0) {
+            // 반대로, 수량을 다시 늘리면 자동으로 'ACTIVE'로 복구 (선택 사항)
+            item.setStatus("ACTIVE");
+        }
+
+        // 6. [추가] 이력 기록 (UPDATE)
+        // 수량이 변경되었으면 변화량을, 아니면 0을 기록
+        BigDecimal newQty = request.getQuantity() != null ? request.getQuantity() : oldQty;
+        BigDecimal qtyChange = newQty.subtract(oldQty);
+
+        itemEventRepository.save(new ItemEvent(item, actor, "UPDATE", qtyChange));
+
         return ItemResponse.fromEntity(item);
     }
 }

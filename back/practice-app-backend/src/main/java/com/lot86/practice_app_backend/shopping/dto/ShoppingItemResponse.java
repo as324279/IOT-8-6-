@@ -16,6 +16,7 @@ public class ShoppingItemResponse {
     private String unit;
     private String status; // PENDING, PURCHASED
     private boolean isLinked; // 재고 연동 여부
+    private String note;//  메모 포함
 
     public static ShoppingItemResponse fromEntity(ShoppingItem item) {
         return new ShoppingItemResponse(
@@ -24,7 +25,8 @@ public class ShoppingItemResponse {
                 item.getDesiredQty(),
                 item.getUnit(),
                 item.getStatus(),
-                item.getLinkedItem() != null
+                item.getLinkedItem() != null,
+                item.getNote()
         );
     }
 }
