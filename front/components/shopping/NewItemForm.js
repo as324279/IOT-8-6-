@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View, TouchableOpacity, Text, Keyboard } from 'react-native';
 
 export default function NewItemForm({ onAdd, onCancel }) {
 
@@ -9,84 +9,118 @@ export default function NewItemForm({ onAdd, onCancel }) {
   const handleAddItem = () => {
     if (!newName.trim()) return; 
     
-
     onAdd(newName, newNote);
-    
     setNewName("");
     setNewNote("");
+    Keyboard.dismiss(); // 키보드 내리기
   };
 
   return (
-    <View style={styles.newContainer}>
-      <TextInput
-        label="이름"
-        value={newName}
-        onChangeText={setNewName}
-        style={styles.input}
-        placeholder='이름'
-        placeholderTextColor={"#888"}
-        autoFocus={true}
-      />
-      <TextInput
-        label="메모"
-        value={newNote}
-        onChangeText={setNewNote}
-        style={styles.input}
-        placeholder='메모 (선택)'
-        placeholderTextColor={"#888"}
-      />
-      <View style={styles.buttonRow}>
-        <Button
-          mode="contained"
-          onPress={onCancel} 
-          style={[styles.addButton, styles.cancelButton]}
-          color="#888"
-          title="취소"
+    <View style={styles.overlay}>
+        <View style={styles.newContainer}>
+        <Text style={styles.title}>새 물품 추가</Text>
+        
+        <TextInput
+            value={newName}
+            onChangeText={setNewName}
+            style={styles.input}
+            placeholder='구매할 물품 이름 (예: 우유)'
+            placeholderTextColor={"#aaa"}
+            autoFocus={true}
         />
-        <Button
-          mode="contained"
-          onPress={handleAddItem} 
-          style={styles.addButton}
-          color="#53ACD9"
-          title="추가"
+        <TextInput
+            value={newNote}
+            onChangeText={setNewNote}
+            style={[styles.input, styles.noteInput]}
+            placeholder='메모 (선택사항)'
+            placeholderTextColor={"#aaa"}
         />
-      </View>
+        
+        <View style={styles.buttonRow}>
+            {/* 취소 버튼 */}
+            <TouchableOpacity onPress={onCancel} style={[styles.button, styles.cancelButton]}>
+                <Text style={styles.cancelText}>취소</Text>
+            </TouchableOpacity>
+
+            {/* 추가 버튼 */}
+            <TouchableOpacity 
+                onPress={handleAddItem} 
+                style={[styles.button, styles.addButton, !newName.trim() && styles.disabledButton]}
+                disabled={!newName.trim()}
+            >
+                <Text style={styles.addText}>추가</Text>
+            </TouchableOpacity>
+        </View>
+        </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  input: {
-    marginVertical: 8,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 12,
-    backgroundColor: '#fafafa',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
-    marginTop: 8,
-  },
-  addButton: {
-    flex: 1,
-    borderRadius: 8,
-    paddingVertical: 4,
-  },
-  cancelButton: {
-    backgroundColor: '#eee',
-  },
+  // 배경을 살짝 어둡게 처리하는 옵션 (필요하면 사용)
+  // overlay: { ...Styles.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.3)' }, 
+  
   newContainer: {
     backgroundColor: '#fff',
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    elevation: 4,
+    padding: 20,
+    paddingBottom: 30, // 하단 여백 확보
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-  }
+  },
+  title: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 15,
+      color: '#333',
+  },
+  input: {
+    borderBottomWidth: 1, // 밑줄 스타일로 변경 (더 깔끔함)
+    borderBottomColor: '#ddd',
+    paddingVertical: 10,
+    fontSize: 16,
+    marginBottom: 15,
+    color: '#333',
+  },
+  noteInput: {
+      fontSize: 14,
+      marginBottom: 25,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end', // 오른쪽 정렬
+    gap: 15,
+  },
+  button: {
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      minWidth: 70,
+      alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#f0f0f0',
+  },
+  cancelText: {
+      color: '#666',
+      fontWeight: '600',
+  },
+  addButton: {
+    backgroundColor: '#5DADE2',
+  },
+  disabledButton: {
+      backgroundColor: '#ccc',
+  },
+  addText: {
+      color: '#fff',
+      fontWeight: 'bold',
+  },
 });
