@@ -11,7 +11,8 @@ public record GroupCreateResponse(
         String name,
         Creator createdBy,
         OffsetDateTime createdAt,
-        OffsetDateTime dissolvedAt
+        OffsetDateTime dissolvedAt,
+        long memberCount //멤버 수 필드 추가
 ) {
     public record Creator(
             UUID userId,
@@ -20,7 +21,7 @@ public record GroupCreateResponse(
             OffsetDateTime createdAt
     ) {}
 
-    public static GroupCreateResponse fromEntity(AppGroup group) {
+    public static GroupCreateResponse fromEntity(AppGroup group, long memberCount) {
         AppUser creator = group.getCreatedBy();
 
         Creator creatorDto = new Creator(
@@ -35,7 +36,8 @@ public record GroupCreateResponse(
                 group.getName(),
                 creatorDto,
                 group.getCreatedAt(),
-                group.getDissolvedAt()
+                group.getDissolvedAt(),
+                memberCount//여기에 값이 저장됨.
         );
     }
 }
