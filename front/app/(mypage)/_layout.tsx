@@ -1,7 +1,8 @@
+import React from 'react'; // React 명시적 임포트
 import { Stack, useRouter } from 'expo-router';
 import TopHeader from '../../components/TopHeader';
 
-export default function MyPageLayout() {
+const MyPageLayout: React.FC = () => {
   const router = useRouter();
 
   return (
@@ -9,10 +10,11 @@ export default function MyPageLayout() {
       screenOptions={{
         header: ({ navigation, options }) => (
           <TopHeader
-            title={options.title} // 헤더 제목 title
-            showIcons={options.showIcons || false} 
+            title={options.title as string} 
+            showIcons={(options as any).showIcons || false} 
             showBack={navigation.canGoBack()} 
-            onBackPress={() => navigation.goBack()}
+            onBackPress={() => navigation.goBack()} 
+            onNotificationPress={() => {}}
           />
         ),
       }}
@@ -37,3 +39,4 @@ export default function MyPageLayout() {
     </Stack>
   );
 }
+export default MyPageLayout;

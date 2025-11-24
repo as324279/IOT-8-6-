@@ -1,7 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import { Button, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { OCR_API_URL } from "../../config/apiConfig"; // [수정] 중앙 설정 파일에서 URL 가져오기
+import { OCR_API_URL } from "../config/apiConfig"; // [수정] 중앙 설정 파일에서 URL 가져오기
 import { TextInput } from "react-native-paper";
 
 const ReceiptOCR = () => { // (컴포넌트 이름은 ReceiptOCR로 둬도 됨)

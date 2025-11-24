@@ -1,17 +1,16 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
+import TopHeader from "../components/TopHeader";
 import {
-  ScrollView,
+  Alert, Modal, TextInput, ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import TopHeader from "../../components/TopHeader";
-
-import RoomTabs from "../../components/home/RoomTabs";
+import RoomTabs from "../components/room/RoomTabs";
 
 // 샘플 데이터
 const ALL_ITEMS = [
@@ -25,18 +24,17 @@ const ALL_ITEMS = [
 ];
 
 const ItemCard = ({ item }) => {
+  const router = useRouter();
 
-    const router = useRouter();
-
-    const handlePress = () => {
-    router.push(`/itemDetail?id=${item.id}`); 
+  const handlePress = () => {
+    router.push(`/itemDetail?id=${item.id}`);
   };
-return (
-    <TouchableOpacity style={styles.itemCard} > 
+  return (
+    <TouchableOpacity style={styles.itemCard}>
       <View style={styles.itemImagePlaceholder} />
       <Text style={styles.itemText}>{item.name}</Text>
-      
-      <TouchableOpacity onPress={handlePress}> 
+
+      <TouchableOpacity onPress={handlePress}>
         <MaterialCommunityIcons name="dots-vertical" size={24} color="#555" />
       </TouchableOpacity>
     </TouchableOpacity>
@@ -46,7 +44,34 @@ return (
 export default function InventoryScreen() {
   const router = useRouter();
 
+  const [categories, setCategories] = useState([
+    "전체",
+    "거실",
+    "주방",
+    "욕실",
+  ]);
   const [selectedCategory, setSelectedCategory] = useState("전체");
+
+  // [추가] 장소 추가 모달 상태
+  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+
+  // [추가] 장소 추가 함수
+  const handleAddCategory = () => {
+    if (!newCategoryName.trim()) {
+      Alert.alert("오류", "장소 이름을 입력해주세요.");
+      return;
+    }
+    if (categories.includes(newCategoryName)) {
+      Alert.alert("오류", "이미 존재하는 장소입니다.");
+      return;
+    }
+
+    setCategories([...categories, newCategoryName]); // 목록에 추가
+    setSelectedCategory(newCategoryName); // 추가된 장소 선택
+    setNewCategoryName("");
+    setIsAddModalVisible(false);
+  };
 
   const filteredItems = useMemo(() => {
     // '전체' 탭이면 모든 아이템 반환
@@ -65,19 +90,21 @@ export default function InventoryScreen() {
   return (
     <SafeAreaView style={styles.safeContainer}>
       <TopHeader
-        showBack={false}
+        showBack={true}
         showIcons={true}
-        title="채움" // 방 제목(추후 사용자의 방 제목으로 변경)
+        title="채움" 
       />
 
       <View style={styles.container}>
         <RoomTabs
+          categories={categories} 
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
+          onAddCategory={() => setIsAddModalVisible(true)} 
         />
 
         <ScrollView
-          style={styles.listContainer} 
+          style={styles.listContainer}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
           {filteredItems.map((item) => (
@@ -88,6 +115,32 @@ export default function InventoryScreen() {
         <TouchableOpacity style={styles.fab} onPress={handleAddItemPress}>
           <MaterialCommunityIcons name="plus" size={30} color="#fff" />
         </TouchableOpacity>
+
+        <Modal
+          transparent={true}
+          visible={isAddModalVisible}
+          onRequestClose={() => setIsAddModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>새 장소 추가</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="예: 베란다, 서재"
+                value={newCategoryName}
+                onChangeText={setNewCategoryName}
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity onPress={() => setIsAddModalVisible(false)} style={styles.cancelButton}>
+                  <Text>취소</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleAddCategory} style={styles.addButton}>
+                  <Text style={{color: 'white'}}>추가</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     </SafeAreaView>
   );
@@ -111,7 +164,7 @@ const styles = StyleSheet.create({
   itemCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F0F9F0", 
+    backgroundColor: "#F0F9F0",
     marginHorizontal: 16,
     marginVertical: 6,
     padding: 16,
@@ -131,14 +184,14 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   itemText: {
-    flex: 1, 
+    flex: 1,
     fontSize: 17,
     fontWeight: "500",
   },
   // 물품 추가 버튼
   fab: {
     position: "absolute",
-    bottom: 20, 
+    bottom: 20,
     right: 20,
     width: 56,
     height: 56,
@@ -151,5 +204,43 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 3,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  modalInput: {
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    marginBottom: 20,
+    fontSize: 16,
+    padding: 5,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  cancelButton: {
+    padding: 10,
+    marginRight: 10,
+  },
+  addButton: {
+    padding: 10,
+    backgroundColor: '#5AC8FA',
+    borderRadius: 5,
   },
 });

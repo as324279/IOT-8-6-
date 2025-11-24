@@ -37,15 +37,15 @@ public class AuthController {
 
     // [신규] 인증코드 발송 요청 API
     @PostMapping("/send-code")
-    public ApiResponse<Void> sendCode(@Valid @RequestBody EmailSendCodeRequest request) {
+    public ApiResponse<Boolean> sendCode(@Valid @RequestBody EmailSendCodeRequest request) {
         emailVerificationService.sendSignupCode(request.getEmail());
-        return ApiResponse.ok(null);
+        return ApiResponse.ok(true);
     }
 
     // [신규] 인증코드 검증 요청 API
     @PostMapping("/verify-code")
-    public ApiResponse<Void> verifyCode(@Valid @RequestBody EmailVerifyCodeRequest request) {
+    public ApiResponse<Boolean> verifyCode(@Valid @RequestBody EmailVerifyCodeRequest request) {
         emailVerificationService.verifySignupCode(request.getEmail(), request.getCode());
-        return ApiResponse.ok(null);
+        return ApiResponse.ok(true);
     }
 }
