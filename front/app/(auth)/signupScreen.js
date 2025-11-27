@@ -102,32 +102,52 @@ const SignupScreen = () => {
   };
 
   const handleSignup = async () => {
-    const userData = {
-      email: email,
-      name: name,
-      password: password,
-      termsAgreed: togglebox,
-      privacyAgreed: togglebox2,
+        const userData = {
+            email: email,
+            name: name,
+            password: password,
+            termsAgreed: togglebox,
+            privacyAgreed: togglebox2,
+        };
+
+        try {
+            // 회원가입 요청
+            console.log("회원가입 요청");
+            const signupResponse = await axios.post(`${API_BASE_URL}/api/v1/auth/signup`, userData);
+            
+            let token = signupResponse.data.token || signupResponse.data.data?.token;
+
+            // 토큰 없다면 로그인 요청
+            if (!token) {
+                console.log("토큰 없어서 자동 로그인 시도");
+                const loginResponse = await axios.post(`${API_BASE_URL}/api/v1/auth/login`, {
+                    email: email,
+                    password: password
+                });
+                token = loginResponse.data.token || loginResponse.data.data;
+            }
+
+            // 토큰이 확보되었으면 로그인 처리
+            if (token) {
+                await signIn(token); // 앱에 토큰 저장
+                Alert.alert("환영합니다!", "회원가입이 완료되었습니다.");
+                router.replace('(tabs)/mainHome'); // 메인으로 이동
+            } else {
+                // 만약 로그인 시도조차 실패했다면
+                Alert.alert("회원가입 완료", "자동 로그인에 실패했습니다. 로그인 화면으로 이동합니다.");
+                router.replace('login');
+            }
+
+        } catch (error) {
+            console.error("회원가입 프로세스 실패:", error);
+            if (error.response) {
+                const errorMessage = error.response.data?.error || "오류가 발생했습니다.";
+                Alert.alert("오류", errorMessage);
+            } else {
+                Alert.alert("연결 오류", "서버와 통신할 수 없습니다.");
+            }
+        }
     };
-    try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/v1/auth/signup`,
-        userData
-      );
-      Alert.alert("환영합니다!", "회원가입이 완료되었습니다.");
-      if (response.data.token) {
-        await signIn(response.data.token);
-      }
-      router.replace("(tabs)/mainHome");
-    } catch (error) {
-      if (error.response) {
-        const errorMessage = error.response.data?.error || "서버 응답 오류";
-        Alert.alert("회원가입 오류", errorMessage);
-      } else {
-        Alert.alert("연결 오류", "서버에 연결할 수 없습니다.");
-      }
-    }
-  };
 
   return (
     <View style={styles.container}>
@@ -209,24 +229,6 @@ const SignupScreen = () => {
         onChangeText={setName}
       />
 
-      <View style={styles.passwordContainer}>
-        <TextInput
-          style={styles.passwordInput}
-          placeholder="비밀번호를 입력해주세요"
-          placeholderTextColor={"#999"}
-          value={password}
-          secureTextEntry={!showpassword}
-          onChangeText={setPassword}
-        />
-        <TouchableOpacity onPress={() => setShowpassword(!showpassword)}>
-          <Ionicons
-            name={showpassword ? "eye-off" : "eye"}
-            size={20}
-            color="gray"
-          />
-        </TouchableOpacity>
-      </View>
-
       {/* 비밀번호 입력 */}
       <View style={styles.passwordContainer}>
         <TextInput
@@ -267,7 +269,7 @@ const SignupScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <View style={{ height: 20, marginBottom: 10 }}>
+      <View style={{ height: 20 }}>
         {isPasswordMismatch ? (
           <Text style={styles.errorText}>비밀번호가 일치하지 않습니다</Text>
         ) : null}
