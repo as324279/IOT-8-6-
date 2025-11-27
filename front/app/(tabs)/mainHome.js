@@ -34,10 +34,7 @@ const MainHome = () => {
 
     // --- Functions ---
     useEffect(() => {
-        (async () => {
-            const { status } = await Notifications.requestPermissionsAsync();
-            if (status !== 'granted') alert('알림 권한이 필요합니다!');
-        })();
+       room();
     }, []);
 
     const OpenModal = (type) => {
@@ -58,6 +55,38 @@ const MainHome = () => {
         console.log(`${roomName} 방으로 입장합니다.`);
         router.push('/inventory');
     };
+
+    const room = async () => {
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+
+      if (!token) {
+        Alert.alert("사용자 정보가 필요해요!");
+        return;
+      }
+
+      const get = await axios.get(`${API_BASE_URL}/api/v1/groups`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      console.log("그룹 조회", get.data);
+
+      const groupList = get.data.data;
+
+      // 🔥 서버에서 받은 전체 목록을 그대로 rooms로 설정
+      setRooms(
+        groupList.map(g => ({
+          id: g.groupId,
+          name: g.name,
+          memberCount: g.memberCount ?? 1 // 널 방지
+        }))
+      );
+
+    } catch (error) {
+      console.log("그룹 조회 오류!", error.response?.data || error);
+    }
+  };
+
     //그룹 만들기 -> 요청은 api/v1/groups
     const handleCreateGroup = async () => {
         if (!ismodalValue.trim()) {
@@ -121,17 +150,43 @@ const MainHome = () => {
         }
     }
 
-    const handleJoinGroup = async () => {
-        if (!ismodalValue.trim()) {
-            Alert.alert("오류", "초대 코드를 입력해주세요.");
-            return;
-        }
-        setIsLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setIsLoading(false);
-        Alert.alert("성공", "그룹에 입장했습니다!");
-        CloseModal();
+     const handleJoinGroup = async () => {
+    if (!ismodalValue.trim()) {
+      Alert.alert("오류", "초대 코드를 입력해주세요.");
+      return;
     }
+
+    setIsLoading(true);
+
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) {
+        Alert.alert("사용자 정보가 필요해요!");
+        setIsLoading(false);
+        return;
+      }
+
+      const joinGroup = await axios.post(
+        `${API_BASE_URL}/api/v1/groups/join`,
+        { code: ismodalValue },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      console.log("그룹 입장 완료!", joinGroup.data);
+      Alert.alert("성공", "그룹에 입장했습니다!");
+
+      // 🔥 입장 후 최신 목록 다시 조회
+      await room();
+
+      CloseModal();
+
+    } catch (error) {
+      console.log("그룹 가입 오류", error.response?.data || error);
+      Alert.alert("오류", error.response?.data?.error || "그룹 가입 실패!");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top']}>
