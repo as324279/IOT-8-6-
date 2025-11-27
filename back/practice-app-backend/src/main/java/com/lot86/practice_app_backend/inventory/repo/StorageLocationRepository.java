@@ -7,6 +7,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface StorageLocationRepository extends JpaRepository<StorageLocation, UUID> {
+
+    // 그룹 내 보관장소 목록 조회
     List<StorageLocation> findByGroup_GroupId(UUID groupId);
+
+    // 이름 중복 체크용
     Optional<StorageLocation> findByGroup_GroupIdAndName(UUID groupId, String name);
 }
