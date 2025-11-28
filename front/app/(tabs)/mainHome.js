@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import * as Notifications from 'expo-notifications';
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { Alert, ScrollView, View, Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
@@ -23,7 +23,7 @@ const MainHome = () => {
     
     // --- State 관리 ---
     const [rooms, setRooms] = useState([]);
-
+    const [userId,setUserId] = useState(null);
     const [isModal, setIsModal] = useState(false);
     const [modalType, setModalType] = useState('');
     const [ismodalValue, setIsmodalValue] = useState("");
@@ -36,6 +36,14 @@ const MainHome = () => {
     useEffect(() => {
        room();
     }, []);
+
+     // useEffect( () => {
+     //   const load = async () => {
+     //     const id = await AsyncStorage.getItem("userId");
+     //     setUserId(id);
+     //   };
+     //   load();
+     // }, [])
 
     const OpenModal = (type) => {
         setModalType(type);
@@ -51,9 +59,13 @@ const MainHome = () => {
         Alert.alert("복사 완료", "초대 코드가 클립보드에 복사되었습니다.");
     };
 
-    const handleRoomPress = (roomName) => {
-        console.log(`${roomName} 방으로 입장합니다.`);
-        router.push('/inventory');
+    const handleRoomPress = (room) => {
+        console.log("방 입장 그룹 아이디 확인", room);
+         router.push({
+           pathname:"/(tabs)/inventory",
+           params: {group_id:room.id}
+         });
+        
     };
 
     const room = async () => {
