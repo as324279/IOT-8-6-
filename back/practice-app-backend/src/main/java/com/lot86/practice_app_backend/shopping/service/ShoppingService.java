@@ -2,8 +2,11 @@ package com.lot86.practice_app_backend.shopping.service;
 
 import com.lot86.practice_app_backend.entity.AppUser;
 import com.lot86.practice_app_backend.group.entity.AppGroup;
+import com.lot86.practice_app_backend.group.entity.GroupMember;
+import com.lot86.practice_app_backend.group.repo.GroupMemberRepository;
 import com.lot86.practice_app_backend.inventory.entity.Item;
 import com.lot86.practice_app_backend.inventory.repo.ItemRepository;
+import com.lot86.practice_app_backend.notification.service.NotificationService;
 import com.lot86.practice_app_backend.repo.AppGroupRepository;
 import com.lot86.practice_app_backend.repo.AppUserRepository;
 import com.lot86.practice_app_backend.shopping.dto.*;
@@ -15,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -32,6 +34,9 @@ public class ShoppingService {
     private final AppGroupRepository groupRepository;
     private final AppUserRepository userRepository;
     private final ItemRepository inventoryRepository; // 재고 연결용
+
+    private final NotificationService notificationService;
+    private final GroupMemberRepository groupMemberRepository; // 멤버 조회용
 
     /** 1. 쇼핑 리스트 생성 */
     @Transactional
@@ -78,7 +83,7 @@ public class ShoppingService {
         item.setItemName(request.getItemName());
         item.setDesiredQty(request.getDesiredQty());
         item.setUnit(request.getUnit());
-        item.setNote(request.getNote()); // [추가] 메모 저장
+        item.setNote(request.getNote()); // 메모 저장
         item.setAssignee(user);
 
         if (request.getLinkedItemId() != null) {
@@ -105,9 +110,12 @@ public class ShoppingService {
 
         // 상태 업데이트 -> DB 트리거가 재고를 자동으로 채워줌
         item.setStatus("PURCHASED");
-        item.setAssignee(user); // 이 부분에서 빨간 줄이 뜨면 ShoppingItem 엔티티에 purchasedBy 필드가 있는지 확인해주세요. 없으면 assignee를 쓰거나 필드를 추가해야 합니다. (일단 그대로 진행)
+        item.setAssignee(user);
         item.setPurchasedQty(item.getDesiredQty());
         item.setPurchasedAt(OffsetDateTime.now(ZoneOffset.UTC));
+
+        // [추가] 그룹 멤버들에게 알림 발송
+        sendPurchaseNotification(item, user);
     }
 
     /** 5. 쇼핑 항목 삭제 */
@@ -140,6 +148,40 @@ public class ShoppingService {
                 .collect(Collectors.toList());
 
         return ShoppingListResponse.fromEntity(list, itemDtos);
+    }
+
+    // 👇 [추가된 메서드] 알림 발송 헬퍼 메서드
+    private void sendPurchaseNotification(ShoppingItem item, AppUser purchaser) {
+        try {
+            // 1. 그룹 ID 찾기
+            UUID groupId = item.getShoppingList().getGroup().getGroupId();
+
+            // 2. 그룹 멤버 조회
+            List<GroupMember> members = groupMemberRepository.findByGroupId(groupId);
+
+            // 3. 나(구매자)를 제외한 멤버들의 User ID 추출
+            List<UUID> targetUserIds = members.stream()
+                    .map(GroupMember::getUserId)
+                    .filter(id -> !id.equals(purchaser.getUserId()))
+                    .toList();
+
+            if (targetUserIds.isEmpty()) return; // 보낼 사람이 없으면 종료
+
+            // 4. User 객체 조회
+            List<AppUser> targets = userRepository.findAllById(targetUserIds);
+
+            // 5. 알림 내용 생성
+            String title = "구매 완료";
+            String body = String.format("'%s'님이 '%s' 구매를 완료했습니다.", purchaser.getName(), item.getItemName());
+
+            // 6. 전송 (DB 저장)
+            for (AppUser target : targets) {
+                notificationService.createNotification(target, "PURCHASE_DONE", title, body);
+            }
+        } catch (Exception e) {
+            // 알림 실패가 비즈니스 로직(구매)을 막지 않도록 예외 처리
+            System.err.println("구매 알림 발송 실패: " + e.getMessage());
+        }
     }
 
 }

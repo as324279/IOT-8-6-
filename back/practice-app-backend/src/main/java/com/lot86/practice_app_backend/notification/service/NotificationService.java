@@ -7,6 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
@@ -21,4 +24,10 @@ public class NotificationService {
 
         // (추후 여기에 실제 FCM 푸시 발송 로직 추가 가능)
     }
+    @Transactional(readOnly = true)
+    public List<Notification> getMyNotifications(UUID userId) {
+        return notificationRepository.findByUser_UserIdOrderBySentAtDesc(userId);
+    }
+
+
 }

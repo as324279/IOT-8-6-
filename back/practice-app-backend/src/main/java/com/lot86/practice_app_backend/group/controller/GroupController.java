@@ -29,7 +29,7 @@ public class GroupController {
         return (UUID) authentication.getPrincipal();
     }
 
-    /** 0) 그룹 생성  (POST /api/v1/groups) */
+    /** 0) 그룹 생성 (POST /api/v1/groups) */
     @PostMapping
     public ResponseEntity<ApiResponse<GroupCreateResponse>> createGroup(
             @RequestBody GroupCreateRequest requestDto,
@@ -38,7 +38,9 @@ public class GroupController {
         UUID currentUserId = getCurrentUserId(authentication);
 
         AppGroup group = groupService.createGroup(requestDto, currentUserId);
-        GroupCreateResponse responseDto = GroupCreateResponse.fromEntity(group);
+
+        // [수정] 생성 직후이므로 멤버 수는 무조건 1명 (본인)
+        GroupCreateResponse responseDto = GroupCreateResponse.fromEntity(group, 1L);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)

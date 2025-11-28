@@ -8,13 +8,18 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
     const [userToken, setUserToken] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [userId, setUserId] = useState(null);
 
     useEffect(() => {
         // 앱 시작 시 저장된 토큰 확인
         const loadToken = async () => {
             try {
                 const token = await AsyncStorage.getItem('userToken');
+                // const id = await AsyncStorage.getItem("userId");
+                
                 setUserToken(token);
+                // setUserId(id);
+                
             } catch (e) {
                 console.error('AsyncStorage Error:', e);
             } finally {
@@ -25,9 +30,12 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     // 로그인 함수: 토큰을 저장하고 상태 업데이트
-    const signIn = async (token) => {
+    const signIn = async (token,id) => {
         await AsyncStorage.setItem('userToken', token);
+        // await AsyncStorage.setItem("userId",id.toString());
         setUserToken(token);
+        // setUserId(id);
+        
     };
 
     // 로그아웃 함수: 토큰을 삭제하고 상태 초기화
@@ -39,7 +47,7 @@ export const AuthProvider = ({ children }) => {
     // 로딩 중이거나 토큰이 없을 경우, 스플래시 화면 등을 표시하는 로직 필요
 
     return (
-        <AuthContext.Provider value={{ userToken, isLoading, signIn, signOut }}>
+        <AuthContext.Provider value={{ userToken,userId, isLoading, signIn, signOut }}>
             {children}
         </AuthContext.Provider>
     );

@@ -10,7 +10,7 @@ const RoomList = ({ rooms, onRoomPress }) => {
                 <Pressable 
                     key={room.id} 
                     style={styles.roomCard}
-                    onPress={() => onRoomPress(room.name)}
+                    onPress={() => onRoomPress(room)}
                 >
                     <View style={styles.roomIconBox}>
                         <MaterialCommunityIcons name="home-variant-outline" size={32} color="#555" />

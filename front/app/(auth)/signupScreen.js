@@ -118,7 +118,7 @@ const SignupScreen = () => {
       if (response.data.token) {
         await signIn(response.data.token);
       }
-      router.replace("(tabs)/mainHome");
+      router.push("/");
     } catch (error) {
       if (error.response) {
         const errorMessage = error.response.data?.error || "서버 응답 오류";

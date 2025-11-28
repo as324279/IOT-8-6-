@@ -12,23 +12,26 @@ const RoomTabs = ({ categories, selectedCategory, onSelectCategory, onAddCategor
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
       >
-        {categories.map((category) => (
-          <TouchableOpacity
-            key={category}
-            style={[
-              styles.tab,
-              selectedCategory === category && styles.selectedTab
-            ]}
-            onPress={() => onSelectCategory(category)}
-          >
-            <Text style={[
-              styles.tabText,
-              selectedCategory === category && styles.selectedTabText
-            ]}>
-              {category}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {categories.map((category, index) => (
+  <TouchableOpacity
+    key={category.locationId ?? `all-${index}`}
+    style={[
+      styles.tab,
+      selectedCategory?.locationId === category.locationId && styles.selectedTab
+    ]}
+    onPress={() => onSelectCategory(category)}
+  >
+    <Text
+      style={[
+        styles.tabText,
+        selectedCategory?.locationId === category.locationId && styles.selectedTabText
+      ]}
+    >
+      {category.name}
+    </Text>
+  </TouchableOpacity>
+))}
+
 
         <TouchableOpacity style={[styles.tab, styles.addTab]} onPress={onAddCategory}>
            <MaterialIcons name="add" size={20} color="#555" />

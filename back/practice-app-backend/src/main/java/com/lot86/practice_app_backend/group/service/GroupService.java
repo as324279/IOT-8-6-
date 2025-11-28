@@ -62,8 +62,12 @@ public class GroupService {
 
         List<AppGroup> groups = appGroupRepository.findAllById(groupIds);
 
+        // [수정] 각 그룹별로 멤버 수를 조회해서 DTO에 담음
         return groups.stream()
-                .map(GroupCreateResponse::fromEntity)
+                .map(group -> {
+                    long count = groupMemberRepository.countByGroupId(group.getGroupId());
+                    return GroupCreateResponse.fromEntity(group, count);
+                })
                 .toList();
     }
 

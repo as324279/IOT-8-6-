@@ -42,8 +42,10 @@ export default function TabsLayout() {
       />
 
       
-      <Tabs.Screen name="ReceiptOCR"options={{ href: null }} />
-     
+      <Tabs.Screen name="receiptOCR"options={{ href: null }} />
+      <Tabs.Screen name="loading"options={{ href: null }} />
+      <Tabs.Screen name="recieptScreen"options={{ href: null }} />
+      <Tabs.Screen name = "inventory" options={{href:null}}/>
     </Tabs>
   );
 }
