@@ -1,5 +1,6 @@
 package com.lot86.practice_app_backend.common;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+@Slf4j
 // @RestControllerAdvice : 모든 @RestController에서 발생하는 예외를 가로채는 녀석
 @RestControllerAdvice
 public class ErrorHandler {
@@ -36,14 +38,17 @@ public class ErrorHandler {
     // 3. 잘못된 요청 예외 (e.g. 비밀번호 불일치)
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
-        // "error": "잘못된 비밀번호입니다"
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
     }
 
     // 4. 나머지 모든 예외
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneral(Exception ex) {
-        // "error": "internal_server_error" (보안을 위해 상세 내용은 숨김)
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "internal_server_error"));
+        // 🔥 여기서 로그 찍기
+        log.error("Unhandled exception", ex);
+
+        // 클라이언트에게는 내부 상세는 숨기고, 공통 에러 코드만 전달
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "internal_server_error"));
     }
 }

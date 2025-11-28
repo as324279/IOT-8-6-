@@ -17,7 +17,7 @@ const CheckScreen = () => {
 이메일 링크를 확인한 후, 아래 버튼을 눌러 로그인해주세요.</Text>
 
             {/* [수정] '다음' 버튼 클릭 시 login.js로 이동 */}
-            <Pressable style = {styles.Button} onPress = {() => router.replace('/(auth)/login')}>
+            <Pressable style = {styles.Button} onPress = {() => router.push('/')}>
                 <Text style = {styles.nextButton}>로그인하러 가기</Text>
             </Pressable>
         </View>

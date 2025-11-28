@@ -13,20 +13,22 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 
+// [팀 표준] 이 클래스가 '출입증 발급기' 역할
+// @Component로 Spring Bean으로 등록
 @Component
 public class JwtUtil {
 
     private final String issuer;
-    private final SecretKey secretKey;
+    private final SecretKey secretKey; // SecretKey 객체로 보관
     private final long accessSeconds;
     private final long refreshSeconds;
 
+    // application.properties에서 값을 읽어와서 JwtUtil을 생성
     public JwtUtil(
             @Value("${security.jwt.issuer}") String issuer,
             @Value("${security.jwt.secret}") String secret,
-            // 👉 yml에 있는 키 이름에 맞춤 (없으면 기본값 사용)
-            @Value("${security.jwt.access-seconds:900}") long accessSeconds,
-            @Value("${security.jwt.refresh-seconds:2592000}") long refreshSeconds
+            @Value("${security.jwt.access-token-validity-seconds}") long accessSeconds,
+            @Value("${security.jwt.refresh-token-validity-seconds}") long refreshSeconds
     ) {
         this.issuer = issuer;
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
@@ -34,34 +36,22 @@ public class JwtUtil {
         this.refreshSeconds = refreshSeconds;
     }
 
-    /**
-     * 기존에 쓰던 메서드 그대로 유지
-     *  - subject 에 userId(UUID) 저장
-     *  - ev 클레임에 이메일 인증 여부 저장
-     */
+    // [팀 표준] Access Token 생성 (AuthService에서 호출)
     public String createAccess(UUID userId, boolean emailVerified) {
         Instant now = Instant.now();
         return Jwts.builder()
-                .issuer(issuer)
-                .subject(userId.toString())
-                .claim("ev", emailVerified)
+                .issuer(issuer)//
+                .subject(userId.toString()) // [중요] Subject에 email 대신 userId (UUID) 저장
+                .claim("ev", emailVerified) // emailVerified 여부
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(accessSeconds)))
                 .signWith(secretKey)
                 .compact();
     }
 
-    /**
-     * ✅ AuthService 가 호출하는 시그니처용 래퍼 메서드
-     *  - email 파라미터는 지금은 쓰지 않지만, 호환을 위해 받기만 함
-     *  - 내부에서는 기존 createAccess 를 그대로 사용
-     */
-    public String createAccessToken(UUID userId, String email, boolean emailVerified) {
-        // 필요하면 여기서 email 도 claim 으로 넣을 수 있음
-        return createAccess(userId, emailVerified);
-    }
+    // (RefreshToken 생성 로직은 우선 생략)
 
-    // 토큰 파싱
+    // [팀 표준] 토큰 검증 및 claims 파싱 (JwtAuthenticationFilter에서 호출)
     public Jws<Claims> parseSignedClaims(String token) {
         return Jwts.parser()
                 .verifyWith(secretKey)

@@ -45,7 +45,7 @@ public class SecurityConfig {
                 // 인가 규칙
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // preflight
-                        .requestMatchers("/api/v1/auth/**", "/api/demo/**", "/api/hello/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**", "/api/demo/**", "/api/hello/**", "/test-mail").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/groups").authenticated()
                         .anyRequest().authenticated()
                 )
