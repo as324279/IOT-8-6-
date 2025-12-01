@@ -58,6 +58,7 @@ const InventoryScreen = () =>  {
   const [selectedCategory, setSelectedCategory] = useState({name: "전체", locationId:null});
   const {group_id, created_by} = useLocalSearchParams();
   const [items, setItems] = useState([]);
+  const [openMenu, setOpenMenu] = useState(false);
 
   useEffect( () => {
   console.log("그룹 아이디 확인",group_id);
@@ -76,6 +77,10 @@ const InventoryScreen = () =>  {
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
 
+// 모달 추가
+  const ModalMenu = () => {
+    setOpenMenu(prev => !prev);
+  }
   // [추가] 장소 추가 함수
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) {
@@ -129,7 +134,7 @@ const InventoryScreen = () =>  {
       }
     });
   };
-
+//저장된 물품 조회
   const getItems = async () => {
     try{
       const token = await AsyncStorage.getItem("userToken");
@@ -156,7 +161,7 @@ const InventoryScreen = () =>  {
       console.log("물품 조회 오류:",error.response?.data || error);
     }
   }
-
+//location 조회
   const getlocation = async () => {
     try{
     const token = await AsyncStorage.getItem("userToken");
@@ -217,9 +222,39 @@ const InventoryScreen = () =>  {
           )}
         </ScrollView> 
 
-        <TouchableOpacity style={styles.fab} onPress={handleAddItemPress}>
+        <TouchableOpacity style={styles.fab} onPress={ModalMenu}>
           <MaterialCommunityIcons name="plus" size={30} color="#fff" />
         </TouchableOpacity>
+
+        {openMenu && (
+          <View style={styles.fabMenuBox}>
+            <TouchableOpacity 
+              style={styles.fabMenuItem}
+              onPress={() => {
+              setOpenMenu(false);
+              router.push({
+              pathname: "/recieptOCR",
+              params: { group_id, locationId: selectedCategory.locationId }
+          });
+        }}
+        >
+        <MaterialCommunityIcons name="camera" size={22} color="#333" />
+          <Text style={styles.fabMenuText}>영수증 촬영하기</Text>
+      </TouchableOpacity>
+
+    <TouchableOpacity 
+      style={styles.fabMenuItem}
+      onPress={() => {
+        setOpenMenu(false);
+        router.push({ pathname: "/inputScreen" , params: {group_id,locationId:selectedCategory.locationId}} );
+      }}
+    >
+      <MaterialCommunityIcons name="pencil" size={22} color="#333" />
+      <Text style={styles.fabMenuText}>직접 입력하기</Text>
+    </TouchableOpacity>
+  </View>
+)}
+
 
         <Modal
           transparent={true}
@@ -260,7 +295,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#F5F6FA",
   },
   // 물품 목록
   listContainer: {
@@ -270,17 +305,18 @@ const styles = StyleSheet.create({
   itemCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F0F9F0",
+    backgroundColor: "#FFFFFF",
     marginHorizontal: 16,
-    marginVertical: 6,
-    padding: 16,
-    borderRadius: 10,
+    marginVertical: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
 
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    elevation: 3,
+    shadowColor: "#000000",
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
   },
   itemImagePlaceholder: {
     width: 40,
@@ -349,4 +385,37 @@ const styles = StyleSheet.create({
     backgroundColor: '#5AC8FA',
     borderRadius: 5,
   },
+  //물품 추가 스타일
+  fabMenuBox: {
+  position: "absolute",
+  bottom: 95,
+  right: 20,
+  backgroundColor: "#FFFFFF",
+  borderRadius: 12,
+  paddingVertical: 10,
+  width: 180,
+
+  shadowColor: "#000",
+  shadowOpacity: 0.18,
+  shadowRadius: 6,
+  shadowOffset: { width: 0, height: 3 },
+  elevation: 6,
+
+  zIndex: 100,
+},
+
+fabMenuItem: {
+  flexDirection: "row",
+  alignItems: "center",
+  paddingVertical: 10,
+  paddingHorizontal: 14,
+},
+
+fabMenuText: {
+  marginLeft: 10,
+  fontSize: 15,
+  color: "#333",
+  fontWeight: "500",
+},
+
 });

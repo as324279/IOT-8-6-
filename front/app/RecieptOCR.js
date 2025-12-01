@@ -24,6 +24,10 @@ const ReceiptOCR = () => {
   useEffect( () => {
     console.log("장소 아이디 확인",locationId);
   }, [locationId]);
+
+  useEffect( () => {
+    cameraImage();
+  }, []);
   
   const handleInput = () => {
     router.push({

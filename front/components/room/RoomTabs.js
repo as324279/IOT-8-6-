@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 20,
     borderRadius: 20,
-    backgroundColor: '#f0f0f0', 
+    backgroundColor: '#FFFFFF', 
     marginRight: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   // 추가버튼 
   addTab: {
       paddingHorizontal: 12, 
-      backgroundColor: '#e0e0e0', 
+      backgroundColor: '#FFFFFF', 
   },
   selectedTab: {
     backgroundColor: '#5DADE2',
