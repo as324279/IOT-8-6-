@@ -1,14 +1,35 @@
+import { useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
-import { useState } from "react";
-import { Button, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { OCR_API_URL } from "../config/apiConfig"; // [수정] 중앙 설정 파일에서 URL 가져오기
-import { TextInput } from "react-native-paper";
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRef, useState,useEffect } from "react";
+import { Button, StyleSheet, View } from "react-native";
+import { OCR_API_URL } from "../config/apiConfig";
 
-const ReceiptOCR = () => { // (컴포넌트 이름은 ReceiptOCR로 둬도 됨)
+const SERVER_URL = OCR_API_URL; 
+
+
+const ReceiptOCR = () => {
+  const router = useRouter();
   const [imageUri, setImageUri] = useState(null);
-  // const [textResult, setTextResult] = useState("");
-  const [items,setItems] = useState([]);
+  const [permission, requestPermission] = useCameraPermissions();
+  const cameraRef = useRef(null);
   const [loading, setLoading] = useState(false);
+  const [items,setItems] = useState([]);
+  const {group_id,locationId} = useLocalSearchParams();
+
+  useEffect( () => {
+    console.log("그룹 아이디 확인",group_id);
+  }, [group_id]);
+
+  useEffect( () => {
+    console.log("장소 아이디 확인",locationId);
+  }, [locationId]);
+  
+  const handleInput = () => {
+    router.push({
+      pathname:"inputScreen"
+    })
+  }
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -17,12 +38,38 @@ const ReceiptOCR = () => { // (컴포넌트 이름은 ReceiptOCR로 둬도 됨)
     });
 
     if (!result.canceled) {
-      const uri = result.assets[0].uri;
-      setImageUri(uri);
-      await analyzeImage(uri);
+      analyzeImage(result.assets[0].uri);
     }
   };
 
+  const cameraImage = async () => {
+
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+        if (!permission.granted) {
+        alert("카메라 권한이 필요합니다.");
+        return;
+     }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes:ImagePicker.MediaTypeOptions.Images,
+        quality:1,
+        base64:false
+      });
+
+      const uri = result.assets[0].uri;
+
+    
+    
+      if (!result.canceled) {
+        router.push({
+          pathname:"/loading",
+          params:{imageUri:uri,group_id,locationId}
+        })
+      }
+    
+  }
+
+  
   const analyzeImage = async (uri) => {
     try {
       setLoading(true);
@@ -33,8 +80,7 @@ const ReceiptOCR = () => { // (컴포넌트 이름은 ReceiptOCR로 둬도 됨)
         type: "image/jpeg",
       });
 
-      // [수정] OCR_API_URL 사용
-      const response = await fetch(OCR_API_URL, {
+      const response = await fetch(SERVER_URL, {
         method: "POST",
         headers: {
           "Content-Type": "multipart/form-data",
@@ -42,8 +88,18 @@ const ReceiptOCR = () => { // (컴포넌트 이름은 ReceiptOCR로 둬도 됨)
         body: formData,
       });
 
-      
-    const data = await response.json();
+      const data = await response.json();
+
+      router.push({
+        pathname:"recieptScreen",
+        params: {
+          imageUri:uri,
+          items:JSON.stringify(data.parsed),
+          rawText:data.rawText,
+          group_id,
+          created_by
+        }
+      });
 
       const parsed = Array.isArray(data.parsed) ? data.parsed : typeof data.parsed === "object" && data.parsed != null ?[data.parsed] : [];
       setItems(parsed);
@@ -63,58 +119,40 @@ const ReceiptOCR = () => { // (컴포넌트 이름은 ReceiptOCR로 둬도 됨)
       setItems(updated);
   };
 
+  const SaveDB = async () => {
+    try {
+      setLoading(true);
+
+      const saveUrl = OCR_API_URL.replace('/ocr', '/save-item');
+
+      const response = await fetch(saveUrl, {
+        method: "POST",
+        headers : {
+          "Content-Type" : "application/json",
+        },
+        body:JSON.stringify({items, group_id , 
+                              created_by}),
+      });
+
+    const dataItem = await response.json();
+    console.log("저장 결과:",dataItem);
+
+    } catch (error) {
+      console.log("DB저장 오류");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
         <View style = {styles.B}>
             <Button title="영수증 이미지 선택" onPress={pickImage} color="#7DBCE9" />
+            <View style = {{height:10}}/>
+            <Button title = "영수증 촬영" onPress={cameraImage} color= "#7DBCE9"/>
+<           View style = {{height:10}}/>
+            <Button title = "직접 입력" onPress={handleInput} color= "#7DBCE9"/>
         </View>
-      
-      
-      {imageUri && <Image source={{ uri: imageUri }} style={styles.image} />}
-
-        <KeyboardAvoidingView style = {{flex:1}} behavior={Platform.select({ ios : 'padding', android : 'undefined'})}>
-        <ScrollView style={styles.scrollBox}>
-          <Text style={styles.sectionTitle}>🧾 OCR 추출 결과</Text>
-          
-          {items.length > 0 ?  (
-            items.map( (item,idx) => (
-              <View key = {idx} style = {styles.inputContainer}>
-                <Text style = {styles.name}>상품명</Text>
-                <TextInput 
-                  style = {styles.input}
-                  value = {item.ItemName}
-                  onChangeText={(text) => updateItem(idx, "ItemName", text)}
-                />
-
-                <Text style = {styles.price}>가격</Text>
-                  <TextInput 
-                  style = {styles.input}
-                  value={item.ItemPrice}
-                  onChangeText={(text) => updateItem(idx, "ItemPrice", text)}
-                  keyboardType="numeric"
-                />
-
-                <Text style = {styles.count}>수량</Text>
-                <TextInput 
-                style = {styles.input}
-                value = {item.ItemCount}
-                onChangeText={(text) => updateItem(idx, "ItemCount", text)}
-                />
-              </View>
-            ))
-            ) : (
-          <Text>상품 정보가 없습니다.</Text>
-        )}
-
-        <Pressable style = {styles.button}>
-          <Text style = {styles.buttontext}>등록</Text>
-        </Pressable>
-
-        </ScrollView>
-        </KeyboardAvoidingView>
-
-        
-      
     </View>
   );
 };
@@ -129,9 +167,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8F9FB",
   },
   image: {
-    width: 300,
-    height: 300,
-    marginVertical: 20,
+    width: 150,
+    height: 150,
+    marginVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#CCC",
@@ -139,8 +177,8 @@ const styles = StyleSheet.create({
   B:{marginTop:50},
   scrollBox: {
     flex: 1,
-    width: "100%",
-    maxHeight: 400,
+    width: 300,
+    height:400,
     backgroundColor: "white",
     borderRadius: 10,
     padding: 15,
@@ -160,48 +198,48 @@ const styles = StyleSheet.create({
     color: "#333",
     lineHeight: 18,
   },
-  itemBox: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    backgroundColor: "#F0F6FC",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 6,
-  },
-  itemText: {
-    fontSize: 14,
-    color: "#333",
-  },
-  priceText: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#7DBCE9",
-  },
+  // itemBox: {
+  //   flexDirection: "row",
+  //   justifyContent: "space-between",
+  //   backgroundColor: "#F0F6FC",
+  //   borderRadius: 8,
+  //   padding: 10,
+  //   marginBottom: 6,
+  // },
+  // itemText: {
+  //   fontSize: 14,
+  //   color: "#333",
+  // },
+  // priceText: {
+  //   fontSize: 14,
+  //   fontWeight: "bold",
+  //   color: "#7DBCE9",
+  // },
   inputContainer:{
     width: "100%",
-  marginTop: 20,
-  paddingHorizontal: 10,
+    marginTop: 20,
+    paddingHorizontal: 10,
   },
   name : {
     fontSize: 14,
-  fontWeight: "bold",
-  color: "#333",
-  marginBottom: 5,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 5,
   },
   price:{
     fontSize: 14,
-  fontWeight: "bold",
-  color: "#333",
-  marginBottom: 5,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 5,
   },
   input : {
     borderWidth: 1,
-  borderColor: "#CCC",
-  borderRadius: 8,
-  padding: 10,
-  marginBottom: 15,
-  fontSize: 14,
-  backgroundColor: "#FFF",
+    borderColor: "#CCC",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 15,
+    fontSize: 14,
+    backgroundColor: "#FFF",
   },
   button : {
     backgroundColor: '#5DADE2',
@@ -217,5 +255,3 @@ const styles = StyleSheet.create({
     fontSize: 16,
   }
 });
-
-

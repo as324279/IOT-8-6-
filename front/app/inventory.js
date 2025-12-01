@@ -1,8 +1,9 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import TopHeader from "../components/TopHeader";
+import { useLocalSearchParams } from "expo-router";
 import {
   Alert, Modal, TextInput, ScrollView,
   StyleSheet,
@@ -11,53 +12,72 @@ import {
   View,
 } from "react-native";
 import RoomTabs from "../components/room/RoomTabs";
+import axios from "axios";
+import { API_BASE_URL } from "../config/apiConfig";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+// import { Item } from "react-native-paper/lib/typescript/components/Drawer/Drawer";
+
 
 // 샘플 데이터
-const ALL_ITEMS = [
-  { id: 1, name: "콩나물", location: "주방" },
-  { id: 2, name: "햇반", location: "주방" },
-  { id: 3, name: "샴푸", location: "욕실" },
-  { id: 4, name: "물티슈", location: "거실" },
-  { id: 5, name: "두부", location: "주방" },
-  { id: 6, name: "휴지", location: "거실" },
-  { id: 7, name: "치약", location: "욕실" },
-];
+// const ALL_ITEMS = [
+//   { id: 1, name: "콩나물", location: "주방" },
+//   { id: 2, name: "햇반", location: "주방" },
+//   { id: 3, name: "샴푸", location: "욕실" },
+//   { id: 4, name: "물티슈", location: "거실" },
+//   { id: 5, name: "두부", location: "주방" },
+//   { id: 6, name: "휴지", location: "거실" },
+//   { id: 7, name: "치약", location: "욕실" },
+// ];
 
-const ItemCard = ({ item }) => {
+ const ItemCard = ({ item }) => {
+   const router = useRouter();
+  
+   const handlePress = () => {
+     router.push({
+       pathname:`/itemDetail?id=${item.id}`
+     });
+   };
+
+  
+   return (
+     <TouchableOpacity style={styles.itemCard}>
+       <View style={styles.itemImagePlaceholder} />
+       <Text style={styles.itemText}>{item.name}</Text>
+
+       <TouchableOpacity onPress={handlePress}>
+         <MaterialCommunityIcons name="dots-vertical" size={24} color="#555" />
+       </TouchableOpacity>
+     </TouchableOpacity>
+   );
+ };
+
+const InventoryScreen = () =>  {
   const router = useRouter();
 
-  const handlePress = () => {
-    router.push(`/itemDetail?id=${item.id}`);
-  };
-  return (
-    <TouchableOpacity style={styles.itemCard}>
-      <View style={styles.itemImagePlaceholder} />
-      <Text style={styles.itemText}>{item.name}</Text>
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState({name: "전체", locationId:null});
+  const {group_id, created_by} = useLocalSearchParams();
+  const [items, setItems] = useState([]);
 
-      <TouchableOpacity onPress={handlePress}>
-        <MaterialCommunityIcons name="dots-vertical" size={24} color="#555" />
-      </TouchableOpacity>
-    </TouchableOpacity>
-  );
-};
+  useEffect( () => {
+  console.log("그룹 아이디 확인",group_id);
+}, [group_id]);
 
-export default function InventoryScreen() {
-  const router = useRouter();
+  useEffect( () => {
+    getlocation();
+  }, []);
 
-  const [categories, setCategories] = useState([
-    "전체",
-    "거실",
-    "주방",
-    "욕실",
-  ]);
-  const [selectedCategory, setSelectedCategory] = useState("전체");
+  useEffect( () => {
+    getItems();
+  }, [selectedCategory]);
+  
 
   // [추가] 장소 추가 모달 상태
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
 
   // [추가] 장소 추가 함수
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (!newCategoryName.trim()) {
       Alert.alert("오류", "장소 이름을 입력해주세요.");
       return;
@@ -67,25 +87,106 @@ export default function InventoryScreen() {
       return;
     }
 
-    setCategories([...categories, newCategoryName]); // 목록에 추가
-    setSelectedCategory(newCategoryName); // 추가된 장소 선택
-    setNewCategoryName("");
-    setIsAddModalVisible(false);
+    try{
+      const token = await AsyncStorage.getItem("userToken");
+
+      if (!token) {
+        Alert.alert("사용자 정보가 필요해요!");
+        return;
+      }
+
+      const res = await axios.post(`${API_BASE_URL}/api/v1/groups/${group_id}/locations`, 
+        {name: newCategoryName.trim()},
+        {headers: { Authorization: `Bearer ${token}` }
+      });
+
+      console.log("장소 생성 완료",res.data);
+      await getlocation();
+
+      setNewCategoryName("");
+      setIsAddModalVisible(false);
+    } catch (error) {
+      console.log("장소 생성 에러:",error.response?.data || error);
+    }
   };
 
-  const filteredItems = useMemo(() => {
-    // '전체' 탭이면 모든 아이템 반환
-    if (selectedCategory === "전체") {
-      return ALL_ITEMS;
-    }
-    // 장소에 있는 물품만
-    return ALL_ITEMS.filter((item) => item.location === selectedCategory);
-  }, [selectedCategory]);
+  //  const filteredItems = useMemo(() => {
+  //    // '전체' 탭이면 모든 아이템 반환
+  //    if (selectedCategory === "전체") {
+  //      return ALL_ITEMS;
+  //    }
+  // //   // 장소에 있는 물품만
+  //    return ALL_ITEMS.filter((item) => item.location === selectedCategory);
+  //  }, [selectedCategory]);
 
   const handleAddItemPress = () => {
     // 물품추가 페이지
-    console.log("물품 추가 페이지로 이동");
+    router.push({
+      pathname:"/RecieptOCR",
+      params:{
+        group_id,
+        locationId:selectedCategory.locationId
+      }
+    });
   };
+
+  const getItems = async () => {
+    try{
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) {
+        Alert.alert("사용자 정보가 필요해요!");
+        return;
+      }
+
+      const url =
+      selectedCategory.locationId === null
+        ? `${API_BASE_URL}/api/v1/groups/${group_id}/items`
+        : `${API_BASE_URL}/api/v1/groups/${group_id}/items?locationId=${selectedCategory.locationId}`;
+
+      const get = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      console.log("물품 조회:",get.data);
+
+      const list = get.data.data;
+      setItems(list);
+      
+    } catch (error){
+      console.log("물품 조회 오류:",error.response?.data || error);
+    }
+  }
+
+  const getlocation = async () => {
+    try{
+    const token = await AsyncStorage.getItem("userToken");
+
+      if (!token) {
+        Alert.alert("사용자 정보가 필요해요!");
+        return;
+      }
+
+      const get = await axios.get(`${API_BASE_URL}/api/v1/groups/${group_id}/locations`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      console.log("location조회", get.data);
+
+      const locationList = get.data.data;
+
+      const formindex = [
+        {name: "전체",locationId:null},
+        ...locationList.map(loc => ({
+          name:loc.name,
+          locationId:loc.locationId,
+        }))
+      ];
+      setCategories(formindex);
+
+    } catch (error) {
+      console.log("위치 조회 오류!", error.response?.data || error);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safeContainer}>
@@ -103,14 +204,18 @@ export default function InventoryScreen() {
           onAddCategory={() => setIsAddModalVisible(true)} 
         />
 
-        <ScrollView
+         <ScrollView
           style={styles.listContainer}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          {filteredItems.map((item) => (
-            <ItemCard key={item.id} item={item} />
-          ))}
-        </ScrollView>
+          {items.length === 0 ? (
+            <Text>등록된 물품이 없어요</Text>
+          ) : (
+            items.map(item => (
+              <ItemCard key = {item.itemId} item = {item}/>
+            ))
+          )}
+        </ScrollView> 
 
         <TouchableOpacity style={styles.fab} onPress={handleAddItemPress}>
           <MaterialCommunityIcons name="plus" size={30} color="#fff" />
@@ -145,6 +250,7 @@ export default function InventoryScreen() {
     </SafeAreaView>
   );
 }
+export default InventoryScreen;
 
 // 스타일 시트
 const styles = StyleSheet.create({

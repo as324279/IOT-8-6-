@@ -62,7 +62,7 @@ const MainHome = () => {
     const handleRoomPress = (room) => {
         console.log("방 입장 그룹 아이디 확인", room);
          router.push({
-           pathname:"/(tabs)/inventory",
+           pathname:"/inventory",
            params: {group_id:room.id}
          });
         
