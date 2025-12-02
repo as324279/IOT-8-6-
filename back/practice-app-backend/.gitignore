@@ -32,4 +32,4 @@ Thumbs.db
 # =======================================
 # Sensitive Information (절대 올리면 안 되는 파일)
 # =======================================
-application.properties
+src/main/resources/application.properties
