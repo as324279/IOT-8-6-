@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'; 
 import { useAuth } from '../../components/AuthProvider';
 import { API_BASE_URL } from '../../config/apiConfig'; 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from "jwt-decode";
 
 const LoginScreen = () => {
     const router = useRouter();
@@ -50,6 +52,20 @@ const LoginScreen = () => {
             
             if (token) {
                 console.log("로그인 성공",token);
+
+                try {
+                    const decoded = jwtDecode(token);
+                    const userId = decoded.sub; // 보통 'sub' 필드에 ID가 들어있습니다.
+                    
+                    console.log("토큰에서 추출한 User ID:", userId);
+                    
+                    // 폰에 영구 저장
+                    await AsyncStorage.setItem('userId', userId);
+                    
+                } catch (e) {
+                    console.log("토큰 해독 실패:", e);
+                }
+                
                 await signIn(token);
                 router.replace('../(tabs)/mainHome');
             } else {
