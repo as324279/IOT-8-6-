@@ -50,7 +50,7 @@ const RecieptScreen = () => {
       const addItem = () => {
       setItemList([
         ...itemList,
-        {ItemName:"", ItemCount: "", expiry_date: ""}
+        {ItemName:"", ItemCount: "", expiry_date: "", photo_url: ""}
       ]);
     };
 
@@ -60,7 +60,7 @@ const RecieptScreen = () => {
           setItemList(updated);
     };
     
-      const SaveDB = async () => {
+  const SaveDB = async () => {
   try {
     setLoading(true);
     const token = await AsyncStorage.getItem("userToken");
@@ -77,6 +77,8 @@ const RecieptScreen = () => {
           name: item.ItemName,
           quantity: item.ItemCount,
           expiry_date: item.expiry_date || null,
+          photo_url: item.photo_url || null
+
         }),
       });
 
@@ -106,7 +108,7 @@ const RecieptScreen = () => {
             
             <KeyboardAvoidingView style = {{flex:1}} behavior={Platform.select({ ios : 'padding', android : 'undefined'})}>
             <ScrollView style={styles.scrollBox}>
-              <Text style={styles.sectionTitle}>🧾 인식 상품 등록</Text>
+              <Text style={styles.sectionTitle}>🧾 상품 등록</Text>
 
               <Text style = {styles.label}>상품 수: ({itemList.length}) </Text>
               

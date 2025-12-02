@@ -5,6 +5,8 @@ import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleShee
 import { OCR_API_URL } from "../config/apiConfig";
 import { API_BASE_URL } from '../config/apiConfig';
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useCameraPermissions } from "expo-camera";
+import * as ImagePicker from "expo-image-picker";
 
 const SERVER_URL = OCR_API_URL; 
 
@@ -18,13 +20,13 @@ const InputScreen = () => {
     
 
     const [itemList, setItemList] = useState([
-      {ItemName:"", ItemCount: "", expiry_date: ""}
+      {ItemName:"", ItemCount: "", expiry_date: "", minThreshold: "", unit: ""}
     ]);
 
     const addItem = () => {
       setItemList([
         ...itemList,
-        {ItemName:"", ItemCount: "", expiry_date: ""}
+        {ItemName:"", ItemCount: "", expiry_date: "",minThreshold: "", unit: ""}
       ]);
     };
 
@@ -56,7 +58,7 @@ const InputScreen = () => {
     
 
     const back = () => {
-      setItemList([{ItemName:"", ItemCount: "", expiry_date: ""} ])
+      setItemList([{ItemName:"", ItemCount: "", expiry_date: "", minThreshold: "", unit: ""} ])
       router.push("./mainHome");
     }
 
@@ -77,6 +79,8 @@ const InputScreen = () => {
           name: item.ItemName,
           quantity: item.ItemCount,
           expiry_date: item.expiry_date || null,
+          minThreshold: item.minThreshold || null,
+          unit:item.unit || "ea"
         }),
       });
 
@@ -105,7 +109,7 @@ const InputScreen = () => {
                 
                 <KeyboardAvoidingView style = {{flex:1}} behavior={Platform.select({ ios : 'padding', android : 'undefined'})}>
                 <ScrollView style={styles.scrollBox}>
-                  <Text style={styles.sectionTitle}>🧾 인식 상품 등록</Text>
+                  <Text style={styles.sectionTitle}>🧾 상품 등록</Text>
     
                   
                   
@@ -155,7 +159,31 @@ const InputScreen = () => {
                         />
                         </View>
 
+                      
+                        <View style={styles.spec} />
+                      <View style={styles.mini}>
+                        <Text style={styles.title}>최소 수량</Text>
+                      <TextInput
+                      style={styles.input}
+                      value={item.minThreshold}
+                      onChangeText={(text) => updateItem(idx, "minThreshold", text)}
+                      />
                       </View>
+
+                    <View style={styles.spec} />
+
+                    <View style={styles.mini}>
+                     <Text style={styles.title}>단위</Text>
+                      <TextInput
+                      style={styles.input}
+                      value={item.unit}
+                      onChangeText={(text) => updateItem(idx, "unit", text)}
+                      />
+                      </View>
+                      <View style={styles.spec} />
+
+
+                    </View>
                   ))}
                       
                 <Pressable style = {styles.addContainer} onPress={addItem}>

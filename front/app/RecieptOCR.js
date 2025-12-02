@@ -100,8 +100,7 @@ const ReceiptOCR = () => {
           imageUri:uri,
           items:JSON.stringify(data.parsed),
           rawText:data.rawText,
-          group_id,
-          created_by
+          group_id
         }
       });
 
@@ -123,30 +122,30 @@ const ReceiptOCR = () => {
       setItems(updated);
   };
 
-  const SaveDB = async () => {
-    try {
-      setLoading(true);
+  // const SaveDB = async () => {
+  //   try {
+  //     setLoading(true);
 
-      const saveUrl = OCR_API_URL.replace('/ocr', '/save-item');
+  //     const saveUrl = OCR_API_URL.replace('/ocr', '/save-item');
 
-      const response = await fetch(saveUrl, {
-        method: "POST",
-        headers : {
-          "Content-Type" : "application/json",
-        },
-        body:JSON.stringify({items, group_id , 
-                              created_by}),
-      });
+  //     const response = await fetch(saveUrl, {
+  //       method: "POST",
+  //       headers : {
+  //         "Content-Type" : "application/json",
+  //       },
+  //       body:JSON.stringify({items, group_id , 
+  //                             created_by}),
+  //     });
 
-    const dataItem = await response.json();
-    console.log("저장 결과:",dataItem);
+  //   const dataItem = await response.json();
+  //   console.log("저장 결과:",dataItem);
 
-    } catch (error) {
-      console.log("DB저장 오류");
-    } finally {
-      setLoading(false);
-    }
-  };
+  //   } catch (error) {
+  //     console.log("DB저장 오류");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   return (
     <View style={styles.container}>

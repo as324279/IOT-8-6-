@@ -15,6 +15,8 @@ import RoomTabs from "../components/room/RoomTabs";
 import axios from "axios";
 import { API_BASE_URL } from "../config/apiConfig";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useCameraPermissions } from "expo-camera";
+import * as ImagePicker from "expo-image-picker";
 // import { Item } from "react-native-paper/lib/typescript/components/Drawer/Drawer";
 
 
@@ -76,6 +78,34 @@ const InventoryScreen = () =>  {
   // [추가] 장소 추가 모달 상태
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
+
+  //카메라 찍기 기능
+  const cameraImage = async () => {
+  
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+          if (!permission.granted) {
+          alert("카메라 권한이 필요합니다.");
+          return;
+       }
+  
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes:ImagePicker.MediaTypeOptions.Images,
+          quality:1,
+          base64:false
+        });
+  
+        const uri = result.assets[0].uri;
+  
+      
+      
+        if (!result.canceled) {
+          router.push({
+            pathname:"/loading",
+            params:{imageUri:uri,group_id,locationId:selectedCategory.locationId}
+          })
+        }
+      
+    }
 
 // 모달 추가
   const ModalMenu = () => {
@@ -226,27 +256,36 @@ const InventoryScreen = () =>  {
           <MaterialCommunityIcons name="plus" size={30} color="#fff" />
         </TouchableOpacity>
 
-        {openMenu && (
-          <View style={styles.fabMenuBox}>
-            <TouchableOpacity 
-              style={styles.fabMenuItem}
-              onPress={() => {
-              setOpenMenu(false);
-              router.push({
-              pathname: "/recieptOCR",
-              params: { group_id, locationId: selectedCategory.locationId }
-          });
-        }}
-        >
-        <MaterialCommunityIcons name="camera" size={22} color="#333" />
-          <Text style={styles.fabMenuText}>영수증 촬영하기</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.fab} onPress={ModalMenu}>
+  <MaterialCommunityIcons name="plus" size={30} color="#fff" />
+</TouchableOpacity>
 
-    <TouchableOpacity 
+{openMenu && (
+  <View style={styles.fabMenuBox}>
+    {/* 영수증 촬영 */}
+    <TouchableOpacity
       style={styles.fabMenuItem}
       onPress={() => {
         setOpenMenu(false);
-        router.push({ pathname: "/inputScreen" , params: {group_id,locationId:selectedCategory.locationId}} );
+        cameraImage();
+      }}
+    >
+      <MaterialCommunityIcons name="camera" size={22} color="#333" />
+      <Text style={styles.fabMenuText}>영수증 촬영하기</Text>
+    </TouchableOpacity>
+
+    {/* 직접 입력 */}
+    <TouchableOpacity
+      style={styles.fabMenuItem}
+      onPress={() => {
+        setOpenMenu(false);
+        router.push({
+          pathname: "/inputScreen",
+          params: {
+            group_id,
+            locationId: selectedCategory.locationId
+          }
+        });
       }}
     >
       <MaterialCommunityIcons name="pencil" size={22} color="#333" />
@@ -254,6 +293,7 @@ const InventoryScreen = () =>  {
     </TouchableOpacity>
   </View>
 )}
+
 
 
         <Modal
