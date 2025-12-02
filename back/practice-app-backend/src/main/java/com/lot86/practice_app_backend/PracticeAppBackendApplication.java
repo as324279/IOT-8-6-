@@ -2,8 +2,12 @@ package com.lot86.practice_app_backend;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
+
 
 // @SpringBootApplication: This annotation enables auto-configuration and component scanning.
+@EnableScheduling
 @SpringBootApplication
 public class PracticeAppBackendApplication {
 

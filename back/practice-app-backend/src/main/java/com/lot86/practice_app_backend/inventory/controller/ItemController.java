@@ -83,4 +83,11 @@ public class ItemController {
         ItemResponse response = itemService.updateItem(itemId, userId, request);
         return ApiResponse.ok(response);
     }
+
+    // [추가] 6. 특정 방(Location) 안의 물품 조회
+    // GET /api/v1/locations/{locationId}/items
+    @GetMapping("/locations/{locationId}/items")
+    public ApiResponse<List<ItemResponse>> getLocationItems(@PathVariable UUID locationId) {
+        return ApiResponse.ok(itemService.getLocationItems(locationId));
+    }
 }

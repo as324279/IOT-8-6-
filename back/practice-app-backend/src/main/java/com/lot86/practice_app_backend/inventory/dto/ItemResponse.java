@@ -14,7 +14,10 @@ public class ItemResponse {
     private UUID itemId;
     private String name;
     private String categoryName;
+
     private String locationName;
+    private UUID locationId; // [추가] 방 식별을 위한 ID
+
     private BigDecimal quantity;
     private String unit;
     private LocalDate expiryDate;
@@ -27,6 +30,7 @@ public class ItemResponse {
                 item.getName(),
                 item.getCategory() != null ? item.getCategory().getName() : null,
                 item.getLocation() != null ? item.getLocation().getName() : null,
+                item.getLocation() != null ? item.getLocation().getLocationId() : null, // [추가] ID 반환
                 item.getQuantity(),
                 item.getUnit(),
                 item.getExpiryDate(),
