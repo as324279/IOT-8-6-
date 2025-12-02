@@ -83,5 +83,22 @@ public class ShoppingController {
         return ApiResponse.ok(shoppingService.updateListStatus(listId, userId, request.getStatus()));
     }
 
+    // [추가] 그룹 내 아이템 바로 조회
+    @GetMapping("/groups/{groupId}/shopping-items")
+    public ApiResponse<List<ShoppingItemResponse>> getGroupItems(@PathVariable UUID groupId) {
+        return ApiResponse.ok(shoppingService.getAllItemsInGroup(groupId));
+    }
+
+    // [추가] 그룹에 아이템 바로 추가
+    @PostMapping("/groups/{groupId}/shopping-items")
+    public ApiResponse<ShoppingItemResponse> addItemToGroup(
+            @PathVariable UUID groupId,
+            @RequestBody @Valid ShoppingItemAddRequest request,
+            Authentication authentication
+    ) {
+        UUID userId = getCurrentUserId(authentication);
+        return ApiResponse.ok(shoppingService.addItemToGroup(groupId, userId, request));
+    }
+
 
 }

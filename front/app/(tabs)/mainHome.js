@@ -85,7 +85,7 @@ const MainHome = () => {
 
       const groupList = get.data.data;
 
-      // 🔥 서버에서 받은 전체 목록을 그대로 rooms로 설정
+      // 서버에서 받은 전체 목록을 그대로 rooms로 설정
       setRooms(
         groupList.map(g => ({
           id: g.groupId,

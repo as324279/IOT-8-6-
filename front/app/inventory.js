@@ -56,7 +56,7 @@ const InventoryScreen = () =>  {
 
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState({name: "전체", locationId:null});
-  const {group_id, created_by} = useLocalSearchParams();
+  const {group_id} = useLocalSearchParams();
   const [items, setItems] = useState([]);
   const [openMenu, setOpenMenu] = useState(false);
 

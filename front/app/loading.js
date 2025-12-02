@@ -6,7 +6,7 @@ import { OCR_API_URL } from "../config/apiConfig";
 const SERVER_URL = OCR_API_URL; 
 
 const Loading = () => {
-    const {imageUri, group_id, created_by, locationId} = useLocalSearchParams();
+    const {imageUri, group_id, locationId} = useLocalSearchParams();
 
     useEffect(() => {
         console.log("그룹 아이디 확인", group_id);
