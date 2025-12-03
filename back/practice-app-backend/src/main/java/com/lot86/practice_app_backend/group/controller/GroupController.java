@@ -105,4 +105,28 @@ public class GroupController {
         groupService.leaveGroup(groupId, currentUserId);
         return ApiResponse.ok(null);
     }
+
+    /** [추가] 그룹 이름 수정 (PATCH /api/v1/groups/{groupId}) */
+    @PatchMapping("/{groupId}")
+    public ApiResponse<Void> updateGroupName(
+            @PathVariable UUID groupId,
+            @RequestBody @Valid GroupUpdateRequest request,
+            Authentication authentication
+    ) {
+        UUID userId = getCurrentUserId(authentication);
+        groupService.updateGroup(groupId, userId, request);
+        return ApiResponse.ok(null);
+    }
+
+    /** [추가] 그룹 삭제 (DELETE /api/v1/groups/{groupId}) */
+    @DeleteMapping("/{groupId}")
+    public ApiResponse<Void> deleteGroup(
+            @PathVariable UUID groupId,
+            Authentication authentication
+    ) {
+        UUID userId = getCurrentUserId(authentication);
+        groupService.deleteGroup(groupId, userId);
+        return ApiResponse.ok(null);
+    }
 }
+

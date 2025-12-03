@@ -22,7 +22,7 @@ public class ItemResponse {
     private String unit;
     private LocalDate expiryDate;
     private String status;
-    private String photoUrl;
+    private byte[] photoBytes;
 
     public static ItemResponse fromEntity(Item item) {
         return new ItemResponse(
@@ -35,7 +35,7 @@ public class ItemResponse {
                 item.getUnit(),
                 item.getExpiryDate(),
                 item.getStatus(),
-                item.getPhotoUrl()
+                item.getPhotoBytes()//사진 저장용 타입 변환
         );
     }
 }

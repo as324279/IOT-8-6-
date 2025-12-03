@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -19,7 +20,8 @@ public class ItemCreateRequest {
     private String categoryName;
 
     // 사용자가 선택하거나 입력한 보관장소 이름 (예: "냉장고", "펜트리")
-    private String locationName;
+    //private String locationName;
+    private UUID locationId;
 
     @NotNull(message = "수량은 필수입니다.")
     private BigDecimal quantity;
@@ -30,6 +32,7 @@ public class ItemCreateRequest {
 
     private BigDecimal minThreshold; // 알림 설정용 최소 수량 (선택)
 
-    private String photoUrl;
+    private byte[] photoBytes;//사진데이터 저장
+
     private String barcode;
 }

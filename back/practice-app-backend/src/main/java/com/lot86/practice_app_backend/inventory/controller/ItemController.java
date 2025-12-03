@@ -90,4 +90,18 @@ public class ItemController {
     public ApiResponse<List<ItemResponse>> getLocationItems(@PathVariable UUID locationId) {
         return ApiResponse.ok(itemService.getLocationItems(locationId));
     }
+
+    // [추가] 7. 특정 방(Location)에 물품 등록 (제안하신 기능!)
+    // POST /api/v1/locations/{locationId}/items
+    @PostMapping("/locations/{locationId}/items")
+    public ApiResponse<ItemResponse> createItemInLocation(
+            @PathVariable UUID locationId,
+            @RequestBody @Valid ItemCreateRequest request,
+            Authentication authentication
+    ) {
+        UUID userId = getCurrentUserId(authentication);
+        // 새로운 서비스 메서드 호출
+        return ApiResponse.ok(itemService.createItemInLocation(locationId, userId, request));
+    }
+
 }

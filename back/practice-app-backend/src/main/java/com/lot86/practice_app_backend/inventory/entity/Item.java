@@ -64,8 +64,8 @@ public class Item {
     @Column(name = "barcode", length = 32)
     private String barcode;
 
-    @Column(name = "photo_url", columnDefinition = "text")
-    private String photoUrl;
+    @Column(name = "photo_bytes")
+    private byte[] photoBytes;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")

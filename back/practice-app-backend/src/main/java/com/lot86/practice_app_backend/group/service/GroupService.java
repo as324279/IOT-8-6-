@@ -263,4 +263,42 @@ public class GroupService {
             });
         }
     }
+
+    // ... 기존 코드 하단에 추가 ...
+
+    /** [추가] 그룹 이름 수정 (방장만 가능) */
+    @Transactional
+    public void updateGroup(UUID groupId, UUID userId, GroupUpdateRequest request) {
+        AppGroup group = appGroupRepository.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("그룹을 찾을 수 없습니다."));
+
+        // 권한 체크 (방장만 가능하게)
+        checkOwnerPermission(groupId, userId);
+
+        group.setName(request.getName());
+        // Dirty Checking으로 자동 저장됨
+    }
+
+    /** [추가] 그룹 삭제 (방장만 가능) */
+    @Transactional
+    public void deleteGroup(UUID groupId, UUID userId) {
+        AppGroup group = appGroupRepository.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("그룹을 찾을 수 없습니다."));
+
+        // 권한 체크 (방장만 가능하게)
+        checkOwnerPermission(groupId, userId);
+
+        // DB에 ON DELETE CASCADE가 걸려있다면, 이것만 호출해도 멤버/쇼핑리스트 다 삭제됨!
+        appGroupRepository.delete(group);
+    }
+
+    /** 방장 권한 체크 헬퍼 */
+    private void checkOwnerPermission(UUID groupId, UUID userId) {
+        GroupMember member = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                .orElseThrow(() -> new IllegalStateException("그룹 멤버가 아닙니다."));
+
+        if (!"OWNER".equals(member.getRole())) {
+            throw new IllegalStateException("그룹장(OWNER)만 수행할 수 있는 작업입니다.");
+        }
+    }
 }

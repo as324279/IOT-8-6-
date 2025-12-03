@@ -184,11 +184,11 @@ public class ShoppingService {
         }
     }
 
-    // [추가] 프론트엔드 요청용: 그룹 내 모든 쇼핑 아이템 조회 
+    // [추가] 프론트엔드 요청용: 그룹 내 모든 쇼핑 아이템 조회
     // (리스트 ID를 몰라도 그룹 ID만으로 조회 가능 + 빈 방일 때 500 에러 방지)
     public List<ShoppingItemResponse> getAllItemsInGroup(UUID groupId) {
         List<ShoppingList> lists = listRepository.findByGroup_GroupIdOrderByCreatedAtDesc(groupId);
-        
+
         // 리스트가 하나도 없으면 빈 배열 반환 (에러 방지)
         if (lists.isEmpty()) {
             return List.of();
@@ -215,7 +215,7 @@ public class ShoppingService {
                     .orElseThrow(() -> new IllegalArgumentException("그룹 없음"));
             AppUser user = userRepository.findById(userId)
                     .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
-            
+
             targetList = new ShoppingList();
             targetList.setGroup(group);
             targetList.setTitle("기본 장보기 목록");
@@ -229,6 +229,6 @@ public class ShoppingService {
         return addItem(targetList.getListId(), userId, request);
     }
 
-    
+
 
 }
