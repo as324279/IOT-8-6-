@@ -1,178 +1,183 @@
+// ==============================
+// 🔥 농협 영수증 최적화 OCR 서버
+// ==============================
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import fs from "fs";
 import multer from "multer";
 import fetch from "node-fetch";
-import OpenAI from "openai";
-import pkg from "pg";
-const { Pool } = pkg;
-
-
-const pool = new Pool({
-  host: "192.168.34.7",
-  user: "postgres",      // PostgreSQL 사용자명
-  password: "1234",  // 실제 비밀번호
-  database: "testdb2", // 데이터베이스 이름
-  port: 5432,
-});
+import OpenAI, { APIUserAbortError } from "openai";
 
 dotenv.config();
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
 const imageupload = multer({ dest: "uploads/" });
 const port = 5000;
-
 const API_KEY = "AIzaSyAnwvS3jcDO610aSMIz2wzfycJAGKFVBA4";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// OCR 후 OpenAI로 상품명/가격 추출
-const extractItem =  async (ocrText) =>  {
-  const prompt = `
-다음은 영수증 OCR 텍스트입니다.
-아래 텍스트에서 “상품명(ItemName)”과 “수량(ItemCount)”만 추출하여
-JSON 배열 형식으로 출력해주세요.
+const GOOGLE_API_KEY = API_KEY;
 
-❗ 반드시 지켜야 할 규칙
-- 가격(￦, 원, 숫자 금액 등)은 절대 포함하지 마세요.
-- 상품명 + 수량만 남기고, 가격 정보는 제거하세요.
-- 상품명이 한 글자여도 반드시 포함합니다. ("무", "파" 등)
-- 상품명이 한글자이면 그대로 추출해줘야해.
-  예: 무 -> 근무 이런식으로 추출하면 안돼.
-- OCR 오류로 숫자/가격/수량/문자가 붙어 있어도 상품을 제거하지 말고 정리해서 추출하세요.
-  예: "양파3.300" → ItemName: "양파", ItemCount: "1"
-  예: "사과2 2500" → ItemName: "사과", ItemCount: "2"
-  예: "무1.000" → ItemName: "무", ItemCount: "1"
-- 가격이 붙어 있어도 상품을 절대 누락하지 마세요.
-- 수량을 찾을 수 없으면 기본값을 1로 설정하세요.
 
-❗ 제외해도 되는 것
-- 날짜, 전화번호, 시간, 주소, 바코드 등 명확한 비상품 정보
+// ==============================
+// 📌 Vision v1p4beta1 OCR (농협 영수증 최적화)
+// ==============================
+async function requestVisionOCR(base64Image) {
+  const response = await fetch(
+    `https://vision.googleapis.com/v1p4beta1/images:annotate?key=${GOOGLE_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        requests: [
+          {
+            image: { content: base64Image },
+            features: [{ type: "DOCUMENT_TEXT_DETECTION" }],
+            imageContext: {
+              languageHints: ["ko"],
+              textDetectionParams: {
+                enableTextDetectionConfidenceScore: true
+              }
+            }
+          }
+        ],
+      }),
+    }
+  );
 
-출력 형식(JSON):
+  const data = await response.json();
+
+  // confidence 있는 라인만 모으기
+  const textBlocks =
+    data.responses?.[0]?.textAnnotations?.[0]?.description || "";
+
+  return textBlocks;
+}
+
+
+// ==============================
+// 📌 OCR 전처리
+// ==============================
+function preprocessOCR(text) {
+  let cleaned = text;
+
+  // 문자+숫자 분리
+  cleaned = cleaned.replace(/([가-힣]+)(\d)/g, "$1 $2");
+
+  // 숫자+문자 분리
+  cleaned = cleaned.replace(/(\d)([가-힣]+)/g, "$1 $2");
+
+  // 3.300 → 3300
+  cleaned = cleaned.replace(/(\d+)[.,](\d{3})/g, "$1$2");
+
+  // 공백 정리
+  cleaned = cleaned.replace(/\s+/g, " ");
+
+  return cleaned.trim();
+}
+
+
+// ==============================
+// 📌 GPT 1차 추출 프롬프트
+// ==============================
+function buildExtractPrompt(text) {
+  return `
+다음 OCR 텍스트에서 실제 존재하는 상품명(ItemName)과 수량(ItemCount)만 추출하세요.
+
+❗ 매우 중요
+- OCR 텍스트에 **존재하지 않는 상품을 생성하면 절대 안 됩니다.**
+- OCR에서 보이지 않은 단어(당근, 배추 등)를 만들어내지 마세요.
+- 가격은 제외하세요.
+- 상품명 앞에 p는 제거하세요
+- 상품명 옆에 단위를 빼지마세요. 예를 들어, ml,g,kg같은 단위를 빼지마세요
+- 상품명이 한 글자여도 그대로 사용합니다. ("무", "파")
+- 수량이 없으면 기본값 1
+
+출력 형식:
 [
   { "ItemName": "", "ItemCount": "" }
 ]
 
-영수증 OCR 텍스트:
-${ocrText}
+OCR:
+${text}
 `;
+}
 
-  const Response = await openai.chat.completions.create({
-    model: "gpt-4o",
+
+// ==============================
+// 📌 GPT 호출
+// ==============================
+async function askGPT(prompt) {
+  const res = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
     messages: [{ role: "user", content: prompt }],
   });
 
-  let text = Response.choices[0].message.content;
-  text = text.replace(/```json|```/g, "").trim();
-
+  let text = res.choices[0].message.content.replace(/```json|```/g, "").trim();
   const start = text.indexOf("[");
   const end = text.lastIndexOf("]");
 
-  if (start === -1 || end === -1 ){
-    console.error("json배열을 찾을 수 없다",text);
-    return [];
-  }
-
-  const job = text.substring(start,end+1).trim();
+  if (start === -1 || end === -1) return [];
   try {
-    return JSON.parse(job); // 배열로 파싱
-    
-  } catch (e) {
-    console.error("JSON 파싱 실패:", e);
-    console.log(job);
+    return JSON.parse(text.substring(start, end + 1));
+  } catch {
     return [];
   }
-} 
+}
 
 
+// ==============================
+// 📌 최종 /ocr 엔드포인트
+// ==============================
 app.post("/ocr", imageupload.single("image"), async (req, res) => {
   try {
     const imagePath = req.file.path;
-    const imageBuffer = fs.readFileSync(imagePath);
-    const base64Image = imageBuffer.toString("base64");
+    const base64Image = fs.readFileSync(imagePath).toString("base64");
 
-    // API 호출
-    const OCRResponse = await fetch(
-      `https://vision.googleapis.com/v1/images:annotate?key=${API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          requests: [
-            {
-              image: { content: base64Image },
-              features: [{ type: "DOCUMENT_TEXT_DETECTION" }],
-            },
-          ],
-        }),
-      }
-    );
+    // 🔥 농협 영수증용 OCR v1p4beta1
+    const ocrText = await requestVisionOCR(base64Image);
 
-    const OCRData = await OCRResponse.json();
-    const ocrText = OCRData.responses?.[0]?.fullTextAnnotation?.text || "텍스트가 없어";
-
-    console.log("====원본 OCR 텍스트====");
+    console.log("==== 원본 OCR ====");
     console.log(ocrText);
 
-    // OpenAI를 이용해 상품명/가격만 추출
-    const items = await extractItem(ocrText);
+    // OCR 실패 시 바로 종료
+    if (!ocrText || ocrText.trim().length < 5) {
+      return res.json({
+        error: "OCR이 영수증을 읽지 못했습니다. 다시 찍어주세요.",
+        parsed: [],
+      });
+    }
 
-    console.log("====상품 가격 분리 결과====");
-    console.log(items);
+    const cleaned = preprocessOCR(ocrText);
 
-    
+    console.log("==== 전처리 후 OCR ====");
+    console.log(cleaned);
 
-    res.json({rawText: ocrText, parsed: items });
+    // GPT로 실제 항목 추출
+    const prompt = buildExtractPrompt(cleaned);
+    const final = await askGPT(prompt);
 
-    fs.unlinkSync(imagePath, (err) => {
-      if(err) console.error("파일 삭제 에러!",err)
+    console.log("==== 최종 GPT 결과 ====");
+    console.log(final);
+
+    res.json({
+      rawOCR: ocrText,
+      cleanedOCR: cleaned,
+      parsed: final,
     });
-  
-  } catch (error) {
-    console.error("처리 중 문제 발생:", error);
-    res.status(500).json({ error: "처리 실패!!" });
+
+    fs.unlinkSync(imagePath);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "OCR 처리 실패" });
   }
 });
 
-// app.post("/save-item",async (req,res) => {
-//   try {
-//     const {items,group_id,created_by} = req.body;
-
-//     if (!group_id) {
-//       return res.status(400).json({error:"그룹 아이디 필요!"});
-//     }
-
-//     if(!created_by) {
-//       return res.status(400).json({error : "created_by 필요"});
-//     }
-
-//     if (!Array.isArray(items)) {
-//       return res.status(400).json({error: "아이템 형식 오류"});
-//     }
-
-//     for(const item of items) {
-//       const name = item.ItemName;
-//       const quantity = item.ItemCount;
-//       const expiry_date = item.expiry_date || null;
-  
-
-//       if (!name) continue;
-
-//       await pool.query(
-//         `INSERT INTO item (group_id,name,quantity,expiry_date) VALUES ($1,$2,$3,$4)`, [group_id,name,quantity,expiry_date]);
-
-//     }
-//     res.json({message : "DB적재 성공"});
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({error: "DB 저장 오류"});
-//   }
-// })
 
 app.listen(port, () => {
   console.log(`서버 실행: http://localhost:${port}`);

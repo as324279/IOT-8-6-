@@ -102,6 +102,8 @@ const MainHome = () => {
         setIsMenuVisible(true);
     };
 
+    
+
     // [기능 1] 초대 코드 생성 및 복사
     const handleInviteCopy = async () => {
         try {
@@ -196,8 +198,105 @@ const MainHome = () => {
     const OpenModal = (type) => { setModalType(type); setIsModal(true); }
     const CloseModal = () => { setIsModal(false); setIsmodalValue(""); }
     const copyToClipboard = async () => { await Clipboard.setStringAsync(inviteCode); Alert.alert("복사 완료", "복사됨"); };
-    const handleCreateGroup = async () => { /* 기존 로직 유지 */ };
-    const handleJoinGroup = async () => { /* 기존 로직 유지 */ };
+    //그룹 만들기 -> 요청은 api/v1/groups
+    const handleCreateGroup = async () => {
+        if (!ismodalValue.trim()) {
+            Alert.alert("오류", "그룹 이름을 입력해주세요.");
+            return;
+        }
+        setIsLoading(true);
+
+
+        
+        try {
+            const token = await AsyncStorage.getItem("userToken");
+            if (!token) {
+                Alert.alert("사용자 정보가 필요해요!");
+                setIsLoading(false);
+                return;
+            }
+
+            //1.그룹 생성
+            const createGroupreq = await axios.post(
+            `${API_BASE_URL}/api/v1/groups`,
+            { name: ismodalValue },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+            console.log("그룹 생성",createGroupreq.data);
+
+            console.log("★★★ 그룹 생성 전체 응답 구조 ★★★");
+            console.log(JSON.stringify(createGroupreq.data, null, 2));
+
+            const createdGroup = createGroupreq.data.data;
+            const groupId = createdGroup.groupId;
+            //2. 초대코드 생성
+            const createinvitereq = await axios.post(`${API_BASE_URL}/api/v1/groups/${groupId}/invites`,
+                {}, {headers: { Authorization: `Bearer ${token}`}}
+            );
+
+            console.log("초대 코드 생성", createinvitereq.data);
+            const inviteCode = createinvitereq.data.data.code;
+
+            setIsLoading(false);
+            CloseModal();
+
+            setRooms(prev => [
+                ...prev,
+                {
+                    id:groupId,
+                    name:createdGroup.name,
+                    memberCount:1
+                }
+            ]);
+
+             setCreatedGroupName(createdGroup.name);
+            setInviteCode(inviteCode);
+            setIsResultModal(true);
+
+        } catch (error) {
+            console.log("그룹 생성 오류!",error.response?.data || error);
+            setIsLoading(false);
+            Alert.alert("오류", error.response?.data?.error || "그룹 생성 실패!");
+        }
+    }
+    const handleJoinGroup = async () => {
+    if (!ismodalValue.trim()) {
+      Alert.alert("오류", "초대 코드를 입력해주세요.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) {
+        Alert.alert("사용자 정보가 필요해요!");
+        setIsLoading(false);
+        return;
+      }
+
+      const joinGroup = await axios.post(
+        `${API_BASE_URL}/api/v1/groups/join`,
+        { code: ismodalValue },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      console.log("그룹 입장 완료!", joinGroup.data);
+      Alert.alert("성공", "그룹에 입장했습니다!");
+
+      // 🔥 입장 후 최신 목록 다시 조회
+      await room();
+
+      CloseModal();
+
+    } catch (error) {
+      console.log("그룹 가입 오류", error.response?.data || error);
+      Alert.alert("오류", error.response?.data?.error || "그룹 가입 실패!");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 
     return (
