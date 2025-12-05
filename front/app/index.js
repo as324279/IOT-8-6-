@@ -40,9 +40,9 @@ export default function IntroScreen() {
               <Text style={styles.mainButtonText}>회원가입</Text>
             </Pressable>
 
-            <Pressable onPress={() => router.push('/login')}>
+            {/* <Pressable onPress={() => router.push('/login')}>
               <Text style={styles.subButtonText}>이미 계정이 있다면 로그인</Text>
-            </Pressable>
+            </Pressable> */}
           </View>
         </LinearGradient>
       </ImageBackground>

@@ -67,18 +67,25 @@ const RecieptScreen = () => {
     const gid = Array.isArray(group_id) ? group_id[0] : group_id;
 
     for (const item of itemList){
-      const response = await fetch(`${API_BASE_URL}/api/v1/groups/${gid}/items`, {
+      let url;
+
+
+      if (!locationId || locationId=== null) {
+        url = `${API_BASE_URL}/api/v1/groups/${gid}/items`;
+      }else {
+        url = `${API_BASE_URL}/api/v1/locations/${locationId}/items`;
+      }
+        const response = await fetch(url, {
         method: "POST",
-        headers : {
-          "Authorization":`Bearer ${token}`,
-          "Content-Type" : "application/json",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: item.ItemName,
-          quantity: item.ItemCount,
-          expiry_date: item.expiry_date || null,
-          photo_url: item.photo_url || null
-
+          name: item.ItemName?.trim(),
+          quantity: Number(item.ItemCount),
+          expiryDate: item.expiry_date?.trim() || null,
+          photoUrl: item.photo_url || null,
         }),
       });
 

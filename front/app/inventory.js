@@ -111,6 +111,8 @@ const InventoryScreen = () =>  {
   const ModalMenu = () => {
     setOpenMenu(prev => !prev);
   }
+
+
   // [추가] 장소 추가 함수
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) {
@@ -145,25 +147,8 @@ const InventoryScreen = () =>  {
     }
   };
 
-  //  const filteredItems = useMemo(() => {
-  //    // '전체' 탭이면 모든 아이템 반환
-  //    if (selectedCategory === "전체") {
-  //      return ALL_ITEMS;
-  //    }
-  // //   // 장소에 있는 물품만
-  //    return ALL_ITEMS.filter((item) => item.location === selectedCategory);
-  //  }, [selectedCategory]);
-
-  const handleAddItemPress = () => {
-    // 물품추가 페이지
-    router.push({
-      pathname:"/RecieptOCR",
-      params:{
-        group_id,
-        locationId:selectedCategory.locationId
-      }
-    });
-  };
+  
+  
 //저장된 물품 조회
   const getItems = async () => {
     try{
@@ -173,10 +158,14 @@ const InventoryScreen = () =>  {
         return;
       }
 
-      const url =
-      selectedCategory.locationId === null
-        ? `${API_BASE_URL}/api/v1/groups/${group_id}/items`
-        : `${API_BASE_URL}/api/v1/groups/${group_id}/items?locationId=${selectedCategory.locationId}`;
+     let url;
+
+      if (selectedCategory.locationId === null){
+        url = `${API_BASE_URL}/api/v1/groups/${group_id}/items`;
+      } 
+      else {
+        url = `${API_BASE_URL}/api/v1/locations/${selectedCategory.locationId}/items`;
+      }
 
       const get = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
