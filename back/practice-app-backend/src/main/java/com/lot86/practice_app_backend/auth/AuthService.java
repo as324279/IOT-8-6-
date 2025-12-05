@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.lot86.practice_app_backend.auth.dto.PasswordResetRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -61,5 +62,19 @@ public class AuthService {
         }
 
         return jwtUtil.createAccess(user.getUserId(), user.isEmailVerified());
+    }
+
+    /** [비밀번호 재설정] (비로그인 상태에서 수행) */
+    @Transactional
+    public void resetPassword(PasswordResetRequest request) {
+        // 1. 이메일 인증 코드 검증
+        emailVerificationService.verifyResetPasswordCode(request.getEmail(), request.getCode());
+
+        // 2. 사용자 조회
+        AppUser user = userRepository.findByEmailIgnoreCase(request.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 이메일입니다."));
+
+        // 3. 비밀번호 변경
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
     }
 }

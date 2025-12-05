@@ -34,4 +34,24 @@ public class NotificationService {
                 .map(NotificationResponse::fromEntity)
                 .collect(Collectors.toList());
     }
+
+    /** [추가] 알림 개별 삭제 */
+    @Transactional
+    public void deleteNotification(UUID notifId, UUID userId) {
+        Notification notification = notificationRepository.findById(notifId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 알림입니다."));
+
+        // 본인 알림인지 확인
+        if (!notification.getUser().getUserId().equals(userId)) {
+            throw new IllegalStateException("본인의 알림만 삭제할 수 있습니다.");
+        }
+
+        notificationRepository.delete(notification);
+    }
+
+    /** [추가] 내 알림 전체 삭제 */
+    @Transactional
+    public void deleteAllMyNotifications(UUID userId) {
+        notificationRepository.deleteByUser_UserId(userId);
+    }
 }

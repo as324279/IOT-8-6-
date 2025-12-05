@@ -29,4 +29,26 @@ public class NotificationController {
         UUID userId = (UUID) authentication.getPrincipal();
         return ApiResponse.ok(notificationService.getMyNotifications(userId));
     }
+
+
+    // 2. 알림 개별 삭제 (슬라이드해서 지우기)
+    // DELETE /api/v1/notifications/{notifId}
+    @DeleteMapping("/{notifId}")
+    public ApiResponse<Void> deleteNotification(
+            @PathVariable UUID notifId,
+            Authentication authentication
+    ) {
+        UUID userId = (UUID) authentication.getPrincipal();
+        notificationService.deleteNotification(notifId, userId);
+        return ApiResponse.ok(null);
+    }
+
+    // 3. 알림 전체 삭제 (모두 지우기 버튼)
+    // DELETE /api/v1/notifications
+    @DeleteMapping
+    public ApiResponse<Void> deleteAllNotifications(Authentication authentication) {
+        UUID userId = (UUID) authentication.getPrincipal();
+        notificationService.deleteAllMyNotifications(userId);
+        return ApiResponse.ok(null);
+    }
 }

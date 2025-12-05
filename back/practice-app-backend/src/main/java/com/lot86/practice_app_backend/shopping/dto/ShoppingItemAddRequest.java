@@ -24,6 +24,9 @@ public class ShoppingItemAddRequest {
 
     // (선택) 기존 재고 아이템과 연결하려면 ID를 보냄
     private UUID linkedItemId;
+    // [변경] 방 ID로 자동 연결 이름 대신 ID 사용
+    // 프론트에서 현재 방의 ID를 보내면됨.
+    private UUID locationId;
 
     private String note; // [추가] 메모 필드2025.11.21 ㅇㅅㅂ
 }

@@ -24,6 +24,8 @@ public class ItemResponse {
     private String status;
     private byte[] photoBytes;
 
+    private BigDecimal minThreshold;
+
     public static ItemResponse fromEntity(Item item) {
         return new ItemResponse(
                 item.getItemId(),
@@ -35,7 +37,8 @@ public class ItemResponse {
                 item.getUnit(),
                 item.getExpiryDate(),
                 item.getStatus(),
-                item.getPhotoBytes()//사진 저장용 타입 변환
+                item.getPhotoBytes(),//사진 저장용 타입 변환
+                item.getMinThreshold()
         );
     }
 }

@@ -83,13 +83,13 @@ public class ShoppingController {
         return ApiResponse.ok(shoppingService.updateListStatus(listId, userId, request.getStatus()));
     }
 
-    // [추가] 그룹 내 아이템 바로 조회
+    // 7. 그룹 내 아이템 바로 조회
     @GetMapping("/groups/{groupId}/shopping-items")
     public ApiResponse<List<ShoppingItemResponse>> getGroupItems(@PathVariable UUID groupId) {
         return ApiResponse.ok(shoppingService.getAllItemsInGroup(groupId));
     }
 
-    // [추가] 그룹에 아이템 바로 추가
+    // 8. 그룹에 아이템 바로 추가
     @PostMapping("/groups/{groupId}/shopping-items")
     public ApiResponse<ShoppingItemResponse> addItemToGroup(
             @PathVariable UUID groupId,
@@ -100,5 +100,61 @@ public class ShoppingController {
         return ApiResponse.ok(shoppingService.addItemToGroup(groupId, userId, request));
     }
 
+    // 9. [추가] 댓글 작성
+    @PostMapping("/shopping-lists/{listId}/comments")
+    public ApiResponse<ShoppingCommentResponse> addComment(
+            @PathVariable UUID listId,
+            @RequestBody @Valid ShoppingCommentRequest request,
+            Authentication authentication
+    ) {
+        UUID userId = getCurrentUserId(authentication);
+        return ApiResponse.ok(shoppingService.addComment(listId, userId, request.getBody()));
+    }
+
+    // 10. [추가] 댓글 목록 조회
+    @GetMapping("/shopping-lists/{listId}/comments")
+    public ApiResponse<List<ShoppingCommentResponse>> getComments(@PathVariable UUID listId) {
+        return ApiResponse.ok(shoppingService.getComments(listId));
+    }
+
+    // 11. [추가] 댓글 삭제
+    @DeleteMapping("/shopping-comments/{commentId}")
+    public ApiResponse<Void> deleteComment(
+            @PathVariable UUID commentId,
+            Authentication authentication
+    ) {
+        UUID userId = getCurrentUserId(authentication);
+        shoppingService.deleteComment(commentId, userId);
+        return ApiResponse.ok(null);
+    }
+
+    // 12. [추가] 항목 수정 (수량, 메모 등)
+    @PatchMapping("/shopping-items/{itemRowId}")
+    public ApiResponse<ShoppingItemResponse> updateItem(
+            @PathVariable UUID itemRowId,
+            @RequestBody ShoppingItemUpdateRequest request,
+            Authentication authentication
+    ) {
+        UUID userId = getCurrentUserId(authentication);
+        return ApiResponse.ok(shoppingService.updateItem(itemRowId, userId, request));
+    }
+
+    // 13. [추가] 쇼핑 리스트 제목 수정
+    // PATCH /api/v1/shopping-lists/{listId}
+    @PatchMapping("/shopping-lists/{listId}")
+    public ApiResponse<ShoppingListResponse> updateListTitle(
+            @PathVariable UUID listId,
+            @RequestBody @Valid ShoppingListUpdateRequest request
+    ) {
+        return ApiResponse.ok(shoppingService.updateListTitle(listId, request.getTitle()));
+    }
+
+    // 14. [추가] 쇼핑 리스트 삭제
+    // DELETE /api/v1/shopping-lists/{listId}
+    @DeleteMapping("/shopping-lists/{listId}")
+    public ApiResponse<Void> deleteList(@PathVariable UUID listId) {
+        shoppingService.deleteList(listId);
+        return ApiResponse.ok(null);
+    }
 
 }

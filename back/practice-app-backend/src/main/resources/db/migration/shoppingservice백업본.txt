@@ -41,7 +41,7 @@ public class ShoppingService {
     private final AppGroupRepository groupRepository;
     private final AppUserRepository userRepository;
     private final ItemRepository itemRepository; // [명확하게 이름 변경] (재고 아이템용)
-
+    
     private final NotificationService notificationService;
     private final GroupMemberRepository groupMemberRepository;
     private final ItemService itemService;
@@ -59,7 +59,7 @@ public class ShoppingService {
         newList.setGroup(group);
         newList.setTitle(request.getTitle());
         newList.setCreatedBy(user);
-
+        
         listRepository.save(newList);
         return ShoppingListResponse.fromEntity(newList, List.of());
     }
@@ -100,11 +100,11 @@ public class ShoppingService {
         if (request.getLinkedItemId() != null) {
             Item inventoryItem = itemRepository.findById(request.getLinkedItemId()).orElse(null);
             shoppingItem.setLinkedItem(inventoryItem);
-        }
+        } 
         // 2. 방 이름(ID)으로 연결
         else if (request.getLocationId() != null) {
             UUID locId = request.getLocationId();
-
+            
             Optional<Item> existingItem = itemRepository.findByLocation_LocationIdAndStatusNot(locId, "DEPLETED").stream()
                     .filter(i -> i.getName().equals(targetName))
                     .findFirst();
@@ -128,7 +128,7 @@ public class ShoppingService {
         else {
             Optional<Item> match = itemRepository.findByGroup_GroupIdOrderByCreatedAtDesc(groupId).stream()
                     .filter(i -> i.getName().equals(targetName))
-                    .filter(i -> !"DEPLETED".equals(i.getStatus()))
+                    .filter(i -> !"DEPLETED".equals(i.getStatus())) 
                     .findFirst();
 
             if (match.isPresent()) {
@@ -184,7 +184,7 @@ public class ShoppingService {
                 .collect(Collectors.toList());
         return ShoppingListResponse.fromEntity(list, itemDtos);
     }
-
+    
     /** 7. 댓글 작성 */
     @Transactional
     public ShoppingCommentResponse addComment(UUID listId, UUID userId, String body) {
@@ -219,7 +219,7 @@ public class ShoppingService {
         }
         commentRepository.delete(comment);
     }
-
+    
     /** 10. 항목 수정 */
     @Transactional
     public ShoppingItemResponse updateItem(UUID itemRowId, UUID userId, ShoppingItemUpdateRequest request) {
@@ -255,7 +255,7 @@ public class ShoppingService {
             System.err.println("구매 알림 발송 실패: " + e.getMessage());
         }
     }
-
+    
     /** 11. 리스트 제목 수정 */
     @Transactional
     public ShoppingListResponse updateListTitle(UUID listId, String newTitle) {
@@ -289,19 +289,19 @@ public class ShoppingService {
     // [팀원 기능] 그룹에 아이템 바로 추가
     @Transactional
     public ShoppingItemResponse addItemToGroup(UUID groupId, UUID userId, ShoppingItemAddRequest request) {
-        List<ShoppingList> lists = listRepository.findByGroup_GroupIdOrderByCreatedAtDesc(groupId);
-        ShoppingList targetList;
-        if (lists.isEmpty()) {
-            AppGroup group = groupRepository.findById(groupId).orElseThrow();
-            AppUser user = userRepository.findById(userId).orElseThrow();
-            targetList = new ShoppingList();
-            targetList.setGroup(group);
-            targetList.setTitle("기본 장보기 목록");
-            targetList.setCreatedBy(user);
-            listRepository.save(targetList);
-        } else {
-            targetList = lists.get(0);
-        }
-        return addItem(targetList.getListId(), userId, request);
+         List<ShoppingList> lists = listRepository.findByGroup_GroupIdOrderByCreatedAtDesc(groupId);
+         ShoppingList targetList;
+         if (lists.isEmpty()) {
+             AppGroup group = groupRepository.findById(groupId).orElseThrow();
+             AppUser user = userRepository.findById(userId).orElseThrow();
+             targetList = new ShoppingList();
+             targetList.setGroup(group);
+             targetList.setTitle("기본 장보기 목록");
+             targetList.setCreatedBy(user);
+             listRepository.save(targetList);
+         } else {
+             targetList = lists.get(0);
+         }
+         return addItem(targetList.getListId(), userId, request);
     }
 }

@@ -1,9 +1,6 @@
 package com.lot86.practice_app_backend.auth;
 
-import com.lot86.practice_app_backend.auth.dto.EmailSendCodeRequest;
-import com.lot86.practice_app_backend.auth.dto.EmailVerifyCodeRequest;
-import com.lot86.practice_app_backend.auth.dto.UserLoginRequest;
-import com.lot86.practice_app_backend.auth.dto.UserSignupRequest;
+import com.lot86.practice_app_backend.auth.dto.*;
 import com.lot86.practice_app_backend.common.ApiResponse;
 import com.lot86.practice_app_backend.user.EmailVerificationService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -48,4 +45,19 @@ public class AuthController {
         emailVerificationService.verifySignupCode(request.getEmail(), request.getCode());
         return ApiResponse.ok(true);
     }
+
+    /** 9) [추가] 비밀번호 재설정 인증코드 발송 */
+    @PostMapping("/forgot-password/send-code")
+    public ApiResponse<Void> sendResetCode(@Valid @RequestBody EmailSendCodeRequest request) { // EmailSendCodeRequest 재활용
+        emailVerificationService.sendResetPasswordCode(request.getEmail());
+        return ApiResponse.ok(null);
+    }
+
+    /** 10) [추가] 비밀번호 재설정 처리 */
+    @PostMapping("/forgot-password/reset")
+    public ApiResponse<Void> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
+        authService.resetPassword(request);
+        return ApiResponse.ok(null);
+    }
+
 }
