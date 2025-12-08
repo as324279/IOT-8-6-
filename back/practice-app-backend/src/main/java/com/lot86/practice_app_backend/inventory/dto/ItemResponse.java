@@ -22,7 +22,9 @@ public class ItemResponse {
     private String unit;
     private LocalDate expiryDate;
     private String status;
-    private byte[] photoBytes;
+    //private byte[] photoBytes;
+    private String photoUrl;
+
 
     private BigDecimal minThreshold;
 
@@ -37,7 +39,8 @@ public class ItemResponse {
                 item.getUnit(),
                 item.getExpiryDate(),
                 item.getStatus(),
-                item.getPhotoBytes(),//사진 저장용 타입 변환
+                //item.getPhotoBytes(),//사진 저장용 타입 변환
+                item.getPhotoUrl(),
                 item.getMinThreshold()
         );
     }

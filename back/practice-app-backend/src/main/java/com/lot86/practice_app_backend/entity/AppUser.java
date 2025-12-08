@@ -31,8 +31,11 @@ public class AppUser {
     private String name;
 
     // [수정] String -> byte[] 로 변경
-    @Column(name = "profile_image") // DB 컬럼명은 profile_image (타입: bytea)
-    private byte[] profileImage;
+    //@Column(name = "profile_image") // DB 컬럼명은 profile_image (타입: bytea)
+    //private byte[] profileImage;
+
+    @Column(name = "profile_image")
+    private String profileImage; // [수정] byte[] -> String
 
     // [변경] 팀원 스키마 반영: 이메일 인증 여부를 저장하는 컬럼 추가
     // 회원가입 시 인증을 완료하고 들어오므로, 가입 시점에는 true로 설정됨

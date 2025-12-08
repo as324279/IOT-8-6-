@@ -22,6 +22,7 @@ public class ItemUpdateRequest {
     private BigDecimal minThreshold;
     private String status; // ACTIVE, DEPLETED 등 상태 변경 가능
 
-    private byte[] photoBytes;//사진데이터
+    //private byte[] photoBytes;//사진데이터
+    private String photoUrl;
     private String barcode;
 }

@@ -32,7 +32,9 @@ public class ItemCreateRequest {
 
     private BigDecimal minThreshold; // 알림 설정용 최소 수량 (선택)
 
-    private byte[] photoBytes;//사진데이터 저장
+    //private byte[] photoBytes;//사진데이터 저장
+
+    private String photoUrl;
 
     private String barcode;
 }

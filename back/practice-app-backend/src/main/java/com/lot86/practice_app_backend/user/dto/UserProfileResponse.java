@@ -13,7 +13,7 @@ public class UserProfileResponse {
     private String email;
     private String name;
     // [수정] String -> byte[]
-    private byte[] profileImage;
+    private String profileImage;
 
     public static UserProfileResponse fromEntity(AppUser user) {
         return new UserProfileResponse(

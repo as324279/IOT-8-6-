@@ -11,5 +11,5 @@ public class UserProfileUpdateRequest {
     private String name;
 
     // [수정] String -> byte[]
-    private byte[] profileImage;
+    private String profileImage;
 }
