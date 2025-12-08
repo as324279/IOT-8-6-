@@ -9,13 +9,15 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
+import { FontAwesome5, MaterialCommunityIcons,Ionicons  } from "@expo/vector-icons";
+import { useState } from 'react';
 
 // 컴포넌트
 import TopHeader from "../../components/TopHeader";
 import NewItemForm from "../../components/shopping/NewItemForm";
 import ShoppingListItem from "../../components/shopping/ShoppingListItem";
 import RoomSelectView from "../../components/shopping/RoomSelectView";
+import CommentModal from "../../components/shopping/commentModel";
 
 // Hook 가져오기
 import { useShoppingManager } from "../../hooks/useShoppingManager";
@@ -37,7 +39,11 @@ const ShoppingHome = () => {
     handleQuantityChange,
     handleToggleSelect,
     handleBatchComplete,
+    DeleteItem,
+    listid,
   } = useShoppingManager();
+
+  const [commentModal, setCommentModal] = useState(false);
 
   // 방이 선택되지 않았을 때 방 목록 보여주기
   if (!currentGroupId) {
@@ -60,7 +66,18 @@ const ShoppingHome = () => {
             <MaterialCommunityIcons name="arrow-left" size={24} color="black" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{currentGroupName} 장보기</Text>
-          <View style={{ width: 40 }} />
+           {/* 댓글창 열기*/}
+          <TouchableOpacity 
+          onPress={() => setCommentModal(true)} 
+            style={{ padding: 10 }}
+          >
+          <Ionicons 
+              name="chatbubble-ellipses-outline" 
+              size={24} 
+              color="black" 
+          />
+          </TouchableOpacity>
+
         </View>
 
         {/* 탭 */}
@@ -98,6 +115,8 @@ const ShoppingHome = () => {
               onQuantityChange={(amount) =>
                 handleQuantityChange(item.id, amount)
               }
+              onDelete={() => DeleteItem(item.id)}
+
             />
           )}
           contentContainerStyle={{ paddingBottom: 150 }}
@@ -133,6 +152,14 @@ const ShoppingHome = () => {
         {newInput && (
           <NewItemForm onAdd={addItem} onCancel={() => setNewInput(false)} />
         )}
+
+         {/* ⭐ 댓글 모달 추가 */}
+        <CommentModal
+          visible={commentModal}
+          onClose={() => setCommentModal(false)}
+          listId={listid}   // 현재 그룹 ID = listId 역할
+        />
+
       </SafeAreaView>
     </KeyboardAvoidingView>
   );

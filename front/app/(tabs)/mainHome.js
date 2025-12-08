@@ -60,9 +60,9 @@ const MainHome = () => {
         contentContainerStyle={{ paddingBottom: 150 }}
       >
         <View style={styles.sectionHeader}>
-          <View style={styles.dashedLine} />
+          
           <Text style={styles.sectionTitle}>참여방</Text>
-          <View style={styles.dashedLine} />
+          
         </View>
 
         {/* 방 목록 */}

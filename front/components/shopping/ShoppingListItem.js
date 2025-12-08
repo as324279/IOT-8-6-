@@ -3,27 +3,26 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Checkbox } from 'react-native-paper';
 
-export default function ShoppingListItem({ item, onToggleSelect, onQuantityChange }) {
+export default function ShoppingListItem({ item, onToggleSelect, onQuantityChange, onDelete }) {
 
   const itemContainerStyle = [
     styles.List,
-    item.isCompleted && styles.listCompleted, // [수정] 완료된 항목 스타일 (투명도 등)
-    item.isSelected && styles.listSelected    // [수정] 선택된 항목 스타일 (테두리 색상 등)
+    item.isCompleted && styles.listCompleted,
+    item.isSelected && styles.listSelected
   ];
   
   const itemNameStyle = [
     styles.Name,
-    item.isCompleted && styles.nameCompleted // [수정] 완료된 항목 취소선
+    item.isCompleted && styles.nameCompleted
   ];
 
   return (
     <View style={itemContainerStyle}>
       <View style={styles.ListLeft}>
-        {/* 체크박스는 선택 여부(isSelected)를 제어 */}
         <Checkbox
           status={item.isSelected ? 'checked' : 'unchecked'}
           onPress={onToggleSelect} 
-          color="#5DADE2" // 메인 컬러와 통일
+          color="#5DADE2"
         />
         <View style={styles.textContainer}>
           <Text style={itemNameStyle} numberOfLines={1} ellipsizeMode="tail">
@@ -33,13 +32,13 @@ export default function ShoppingListItem({ item, onToggleSelect, onQuantityChang
         </View>
       </View>
 
-      {/* [수정] 구매 완료된 항목이 아닐 때만 수량 조절 버튼 표시 */}
+      {/* 구매 완료가 아닐 때만 수량 변경 */}
       {!item.isCompleted && (
         <View style={styles.ListRight}>
           <TouchableOpacity 
             onPress={() => onQuantityChange(-1)} 
-            style={styles.qtyButton} // 스타일 추가
-            hitSlop={{top: 10, bottom: 10, left: 10, right: 10}} // 터치 영역 확장
+            style={styles.qtyButton}
+            hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
           >
             <Ionicons name="remove" size={16} color="#555" />
           </TouchableOpacity>
@@ -48,13 +47,18 @@ export default function ShoppingListItem({ item, onToggleSelect, onQuantityChang
           
           <TouchableOpacity 
             onPress={() => onQuantityChange(1)} 
-            style={styles.qtyButton} // 스타일 추가
-            hitSlop={{top: 10, bottom: 10, left: 10, right: 10}} // 터치 영역 확장
+            style={styles.qtyButton}
+            hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
           >
             <Ionicons name="add" size={16} color="#555" />
           </TouchableOpacity>
         </View>
       )}
+
+      {/* ❌ 삭제 버튼 */}
+      <TouchableOpacity onPress={onDelete} style={styles.deleteButton}>
+        <Ionicons name="close" size={22} color="#D9534F" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -64,43 +68,44 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     marginHorizontal: 20,
     marginVertical: 6,
-    borderRadius: 12, // 조금 더 둥글게
+    borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 15,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#f0f0f0', // 연한 테두리
-    elevation: 1, // 살짝 그림자
+    borderColor: '#f0f0f0',
+    elevation: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
   },
   listSelected: {
-    borderColor: '#5DADE2', // 선택 시 파란 테두리
-    backgroundColor: '#F0F9FF', // 아주 연한 파란 배경
+    borderColor: '#5DADE2',
+    backgroundColor: '#F0F9FF',
   },
   listCompleted: {
-    opacity: 0.6, // 완료된 항목은 흐리게
+    opacity: 0.6,
     backgroundColor: '#f9f9f9',
   },
   ListLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1, // 이름이 길어지면 공간 차지하도록
+    flex: 1,
   },
   textContainer: {
     marginLeft: 8,
-    flex: 1, // 텍스트가 길어지면 줄바꿈 혹은 자르기 위해
+    flex: 1,
   },
   ListRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5', // 수량 조절 배경색
+    backgroundColor: '#f5f5f5',
     borderRadius: 20,
     paddingHorizontal: 6,
     paddingVertical: 4,
+    marginRight: 8,
   },
   Name: {
     fontSize: 16,
@@ -123,7 +128,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 12,
-    elevation: 1, // 버튼 그림자
+    elevation: 1,
   },
   quantityText: {
     fontSize: 14,
@@ -132,5 +137,10 @@ const styles = StyleSheet.create({
     minWidth: 24,
     textAlign: 'center',
     marginHorizontal: 4,
+  },
+
+  /** 삭제 버튼 */
+  deleteButton: {
+    padding: 6,
   },
 });

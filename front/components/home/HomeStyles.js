@@ -21,6 +21,7 @@ export const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginHorizontal: 10,
         color: '#000',
+        marginRight:270
     },
     dashedLine: {
         flex: 1,
