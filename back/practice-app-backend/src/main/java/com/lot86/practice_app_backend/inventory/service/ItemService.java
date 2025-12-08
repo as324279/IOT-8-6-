@@ -87,7 +87,7 @@ public class ItemService {
         item.setExpiryDate(request.getExpiryDate());
         item.setMinThreshold(request.getMinThreshold());
         item.setBarcode(request.getBarcode());
-        item.setPhotoBytes(request.getPhotoBytes()); // 사진 저장
+        item.setPhotoUrl(request.getPhotoUrl());
         item.setCreatedBy(user);
 
         Item savedItem = itemRepository.save(item);
@@ -196,7 +196,7 @@ public class ItemService {
         if (request.getExpiryDate() != null) item.setExpiryDate(request.getExpiryDate());
         if (request.getMinThreshold() != null) item.setMinThreshold(request.getMinThreshold());
         if (request.getStatus() != null) item.setStatus(request.getStatus());
-        if (request.getPhotoBytes() != null) item.setPhotoBytes(request.getPhotoBytes());
+        if (request.getPhotoUrl() != null) item.setPhotoUrl(request.getPhotoUrl());
         if (request.getBarcode() != null) item.setBarcode(request.getBarcode());
 
         // 수량 변경 및 알림

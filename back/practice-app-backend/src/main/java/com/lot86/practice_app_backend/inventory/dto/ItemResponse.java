@@ -39,7 +39,7 @@ public class ItemResponse {
                 item.getUnit(),
                 item.getExpiryDate(),
                 item.getStatus(),
-                //item.getPhotoBytes(),//사진 저장용 타입 변환
+                //item.getPhotoBytes()사진 저장용 타입 변환
                 item.getPhotoUrl(),
                 item.getMinThreshold()
         );
