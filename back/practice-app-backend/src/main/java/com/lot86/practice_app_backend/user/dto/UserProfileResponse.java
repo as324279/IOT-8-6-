@@ -12,14 +12,15 @@ public class UserProfileResponse {
     private UUID userId;
     private String email;
     private String name;
-    private String profileImage;
+    // [수정] String -> byte[]
+    private byte[] profileImage;
 
     public static UserProfileResponse fromEntity(AppUser user) {
         return new UserProfileResponse(
                 user.getUserId(),
                 user.getEmail(),
                 user.getName(),
-                user.getProfileImage()
+                user.getProfileImage() // byte[] 그대로 전달
         );
     }
 }

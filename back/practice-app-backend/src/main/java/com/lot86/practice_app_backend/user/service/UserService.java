@@ -41,6 +41,7 @@ public class UserService {
      * 사용자의 이름이나 프로필 사진 URL을 업데이트합니다.
      * 입력된 값만 선택적으로 수정합니다 (null인 경우 기존 값 유지).
      */
+    /** 프로필(이름, 사진) 수정 */
     @Transactional
     public UserProfileResponse updateProfile(UUID userId, UserProfileUpdateRequest request) {
         AppUser user = userRepository.findById(userId)
@@ -49,6 +50,8 @@ public class UserService {
         if (request.getName() != null && !request.getName().isBlank()) {
             user.setName(request.getName());
         }
+
+        // [수정] 사진 데이터(byte[])가 있으면 업데이트
         if (request.getProfileImage() != null) {
             user.setProfileImage(request.getProfileImage());
         }
