@@ -179,29 +179,47 @@ export const useGroupManager = () => {
     }
   };
 
-  // 5. 나가기/삭제
+  // 5. 나가기/삭제 핸들러
   const handleLeave = async () => {
     const isOwner = selectedRoom.ownerId === userId;
-    Alert.alert(isOwner ? "그룹 삭제" : "나가기", "정말 진행하시겠습니까?", [
-      { text: "취소", style: "cancel" },
-      {
-        text: "확인",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            const token = await AsyncStorage.getItem("userToken");
-            await axios.delete(
-              `${API_BASE_URL}/api/v1/groups/${selectedRoom.id}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            ); // API 통일 가정
-            await fetchRooms(token);
-            closeModal();
-          } catch (e) {
-            Alert.alert("오류", "실패");
-          }
+
+    Alert.alert(
+      isOwner ? "그룹 삭제" : "나가기",
+      isOwner
+        ? "그룹을 완전히 삭제하시겠습니까?"
+        : "정말 이 그룹에서 나가시겠습니까?",
+      [
+        { text: "취소", style: "cancel" },
+        {
+          text: "확인",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem("userToken");
+
+              // [수정 핵심] 방장 여부에 따라 API 주소 분기 처리
+              const url = isOwner
+                ? `${API_BASE_URL}/api/v1/groups/${selectedRoom.id}` // 방장: 그룹 삭제
+                : `${API_BASE_URL}/api/v1/groups/${selectedRoom.id}/members/me`; // 멤버: 그룹 탈퇴
+
+              await axios.delete(url, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+
+              await fetchRooms(token);
+              closeModal();
+              Alert.alert(
+                "성공",
+                isOwner ? "그룹이 삭제되었습니다." : "그룹에서 나갔습니다."
+              );
+            } catch (e) {
+              console.error("나가기/삭제 실패:", e);
+              Alert.alert("오류", "요청을 처리하지 못했습니다.");
+            }
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   const handleCopyResultCode = async () => {
