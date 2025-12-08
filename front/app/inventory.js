@@ -5,7 +5,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import TopHeader from "../components/TopHeader";
 import { useLocalSearchParams } from "expo-router";
 import {
-  Alert, Modal, TextInput, ScrollView,
+  Alert,
+  Modal,
+  TextInput,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -17,63 +20,54 @@ import { API_BASE_URL } from "../config/apiConfig";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
-// import { Item } from "react-native-paper/lib/typescript/components/Drawer/Drawer";
 
+const ItemCard = ({ item }) => {
+  const router = useRouter();
 
-// 샘플 데이터
-// const ALL_ITEMS = [
-//   { id: 1, name: "콩나물", location: "주방" },
-//   { id: 2, name: "햇반", location: "주방" },
-//   { id: 3, name: "샴푸", location: "욕실" },
-//   { id: 4, name: "물티슈", location: "거실" },
-//   { id: 5, name: "두부", location: "주방" },
-//   { id: 6, name: "휴지", location: "거실" },
-//   { id: 7, name: "치약", location: "욕실" },
-// ];
+  const handlePress = () => {
+    console.log("클릭한 아이템 정보:", item);
 
- const ItemCard = ({ item }) => {
-   const router = useRouter();
-  
-   const handlePress = () => {
-     router.push({
-       pathname:`/itemDetail?id=${item.id}`
-     });
-   };
+    router.push({
+      pathname: "/itemDetail",
+      params: { itemId: item.itemId },
+    });
+  };
 
-  
-   return (
-     <TouchableOpacity style={styles.itemCard}>
-       <View style={styles.itemImagePlaceholder} />
-       <Text style={styles.itemText}>{item.name}</Text>
+  return (
+    <TouchableOpacity style={styles.itemCard} onPress={handlePress}>
+      <View style={styles.itemImagePlaceholder} />
+      <Text style={styles.itemText}>{item.name}</Text>
 
-       <TouchableOpacity onPress={handlePress}>
-         <MaterialCommunityIcons name="dots-vertical" size={24} color="#555" />
-       </TouchableOpacity>
-     </TouchableOpacity>
-   );
- };
+      <TouchableOpacity onPress={handlePress}>
+        <MaterialCommunityIcons name="dots-vertical" size={24} color="#555" />
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+};
 
-const InventoryScreen = () =>  {
+const InventoryScreen = () => {
   const router = useRouter();
 
   const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState({name: "전체", locationId:null});
-  const {group_id} = useLocalSearchParams();
+  const [selectedCategory, setSelectedCategory] = useState({
+    name: "전체",
+    locationId: null,
+  });
+  const { group_id } = useLocalSearchParams();
   const [items, setItems] = useState([]);
   const [openMenu, setOpenMenu] = useState(false);
 
-  useEffect( () => {
-  console.log("그룹 아이디 확인",group_id);
-}, [group_id]);
+  useEffect(() => {
+    console.log("그룹 아이디 확인", group_id);
+  }, [group_id]);
 
-  useEffect( () => {
+  useEffect(() => {
     getlocation();
   }, []);
 
-  useEffect( () => {
+  useEffect(() => {
     getItems();
   }, [selectedCategory]);
-  
 
   // [추가] 장소 추가 모달 상태
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
@@ -81,37 +75,36 @@ const InventoryScreen = () =>  {
 
   //카메라 찍기 기능
   const cameraImage = async () => {
-  
-        const permission = await ImagePicker.requestCameraPermissionsAsync();
-          if (!permission.granted) {
-          alert("카메라 권한이 필요합니다.");
-          return;
-       }
-  
-        const result = await ImagePicker.launchCameraAsync({
-          mediaTypes:ImagePicker.MediaTypeOptions.Images,
-          quality:1,
-          base64:false
-        });
-  
-        const uri = result.assets[0].uri;
-  
-      
-      
-        if (!result.canceled) {
-          router.push({
-            pathname:"/loading",
-            params:{imageUri:uri,group_id,locationId:selectedCategory.locationId}
-          })
-        }
-      
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      alert("카메라 권한이 필요합니다.");
+      return;
     }
 
-// 모달 추가
-  const ModalMenu = () => {
-    setOpenMenu(prev => !prev);
-  }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 1,
+      base64: false,
+    });
 
+    const uri = result.assets[0].uri;
+
+    if (!result.canceled) {
+      router.push({
+        pathname: "/loading",
+        params: {
+          imageUri: uri,
+          group_id,
+          locationId: selectedCategory.locationId,
+        },
+      });
+    }
+  };
+
+  // 모달 추가
+  const ModalMenu = () => {
+    setOpenMenu((prev) => !prev);
+  };
 
   // [추가] 장소 추가 함수
   const handleAddCategory = async () => {
@@ -124,7 +117,7 @@ const InventoryScreen = () =>  {
       return;
     }
 
-    try{
+    try {
       const token = await AsyncStorage.getItem("userToken");
 
       if (!token) {
@@ -132,158 +125,149 @@ const InventoryScreen = () =>  {
         return;
       }
 
-      const res = await axios.post(`${API_BASE_URL}/api/v1/groups/${group_id}/locations`, 
-        {name: newCategoryName.trim()},
-        {headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await axios.post(
+        `${API_BASE_URL}/api/v1/groups/${group_id}/locations`,
+        { name: newCategoryName.trim() },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-      console.log("장소 생성 완료",res.data);
+      console.log("장소 생성 완료", res.data);
       await getlocation();
 
       setNewCategoryName("");
       setIsAddModalVisible(false);
     } catch (error) {
-      console.log("장소 생성 에러:",error.response?.data || error);
+      console.log("장소 생성 에러:", error.response?.data || error);
     }
   };
 
-  
-  
-//저장된 물품 조회
+  //저장된 물품 조회
   const getItems = async () => {
-    try{
+    try {
       const token = await AsyncStorage.getItem("userToken");
       if (!token) {
         Alert.alert("사용자 정보가 필요해요!");
         return;
       }
 
-     let url;
+      let url;
 
-      if (selectedCategory.locationId === null){
+      if (selectedCategory.locationId === null) {
         url = `${API_BASE_URL}/api/v1/groups/${group_id}/items`;
-      } 
-      else {
+      } else {
         url = `${API_BASE_URL}/api/v1/locations/${selectedCategory.locationId}/items`;
       }
 
       const get = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      console.log("물품 조회:",get.data);
+      console.log("물품 조회:", get.data);
 
       const list = get.data.data;
       setItems(list);
-      
-    } catch (error){
-      console.log("물품 조회 오류:",error.response?.data || error);
+    } catch (error) {
+      console.log("물품 조회 오류:", error.response?.data || error);
     }
-  }
-//location 조회
+  };
+  //location 조회
   const getlocation = async () => {
-    try{
-    const token = await AsyncStorage.getItem("userToken");
+    try {
+      const token = await AsyncStorage.getItem("userToken");
 
       if (!token) {
         Alert.alert("사용자 정보가 필요해요!");
         return;
       }
 
-      const get = await axios.get(`${API_BASE_URL}/api/v1/groups/${group_id}/locations`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const get = await axios.get(
+        `${API_BASE_URL}/api/v1/groups/${group_id}/locations`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       console.log("location조회", get.data);
 
       const locationList = get.data.data;
 
       const formindex = [
-        {name: "전체",locationId:null},
-        ...locationList.map(loc => ({
-          name:loc.name,
-          locationId:loc.locationId,
-        }))
+        { name: "전체", locationId: null },
+        ...locationList.map((loc) => ({
+          name: loc.name,
+          locationId: loc.locationId,
+        })),
       ];
       setCategories(formindex);
-
     } catch (error) {
       console.log("위치 조회 오류!", error.response?.data || error);
     }
-  }
+  };
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      <TopHeader
-        showBack={true}
-        showIcons={true}
-        title="채움" 
-      />
+      <TopHeader showBack={true} showIcons={true} title="채움" />
 
       <View style={styles.container}>
         <RoomTabs
-          categories={categories} 
+          categories={categories}
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
-          onAddCategory={() => setIsAddModalVisible(true)} 
+          onAddCategory={() => setIsAddModalVisible(true)}
         />
 
-         <ScrollView
+        <ScrollView
           style={styles.listContainer}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
           {items.length === 0 ? (
             <Text>등록된 물품이 없어요</Text>
           ) : (
-            items.map(item => (
-              <ItemCard key = {item.itemId} item = {item}/>
-            ))
+            items.map((item) => <ItemCard key={item.itemId} item={item} />)
           )}
-        </ScrollView> 
+        </ScrollView>
 
         <TouchableOpacity style={styles.fab} onPress={ModalMenu}>
           <MaterialCommunityIcons name="plus" size={30} color="#fff" />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.fab} onPress={ModalMenu}>
-  <MaterialCommunityIcons name="plus" size={30} color="#fff" />
-</TouchableOpacity>
+          <MaterialCommunityIcons name="plus" size={30} color="#fff" />
+        </TouchableOpacity>
 
-{openMenu && (
-  <View style={styles.fabMenuBox}>
-    {/* 영수증 촬영 */}
-    <TouchableOpacity
-      style={styles.fabMenuItem}
-      onPress={() => {
-        setOpenMenu(false);
-        cameraImage();
-      }}
-    >
-      <MaterialCommunityIcons name="camera" size={22} color="#333" />
-      <Text style={styles.fabMenuText}>영수증 촬영하기</Text>
-    </TouchableOpacity>
+        {openMenu && (
+          <View style={styles.fabMenuBox}>
+            {/* 영수증 촬영 */}
+            <TouchableOpacity
+              style={styles.fabMenuItem}
+              onPress={() => {
+                setOpenMenu(false);
+                cameraImage();
+              }}
+            >
+              <MaterialCommunityIcons name="camera" size={22} color="#333" />
+              <Text style={styles.fabMenuText}>영수증 촬영하기</Text>
+            </TouchableOpacity>
 
-    {/* 직접 입력 */}
-    <TouchableOpacity
-      style={styles.fabMenuItem}
-      onPress={() => {
-        setOpenMenu(false);
-        router.push({
-          pathname: "/inputScreen",
-          params: {
-            group_id,
-            locationId: selectedCategory.locationId
-          }
-        });
-      }}
-    >
-      <MaterialCommunityIcons name="pencil" size={22} color="#333" />
-      <Text style={styles.fabMenuText}>직접 입력하기</Text>
-    </TouchableOpacity>
-  </View>
-)}
-
-
+            {/* 직접 입력 */}
+            <TouchableOpacity
+              style={styles.fabMenuItem}
+              onPress={() => {
+                setOpenMenu(false);
+                router.push({
+                  pathname: "/inputScreen",
+                  params: {
+                    group_id,
+                    locationId: selectedCategory.locationId,
+                  },
+                });
+              }}
+            >
+              <MaterialCommunityIcons name="pencil" size={22} color="#333" />
+              <Text style={styles.fabMenuText}>직접 입력하기</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <Modal
           transparent={true}
@@ -300,11 +284,17 @@ const InventoryScreen = () =>  {
                 onChangeText={setNewCategoryName}
               />
               <View style={styles.modalButtons}>
-                <TouchableOpacity onPress={() => setIsAddModalVisible(false)} style={styles.cancelButton}>
+                <TouchableOpacity
+                  onPress={() => setIsAddModalVisible(false)}
+                  style={styles.cancelButton}
+                >
                   <Text>취소</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={handleAddCategory} style={styles.addButton}>
-                  <Text style={{color: 'white'}}>추가</Text>
+                <TouchableOpacity
+                  onPress={handleAddCategory}
+                  style={styles.addButton}
+                >
+                  <Text style={{ color: "white" }}>추가</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -313,7 +303,7 @@ const InventoryScreen = () =>  {
       </View>
     </SafeAreaView>
   );
-}
+};
 export default InventoryScreen;
 
 // 스타일 시트
@@ -378,32 +368,32 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalContent: {
-    width: '80%',
-    backgroundColor: 'white',
+    width: "80%",
+    backgroundColor: "white",
     padding: 20,
     borderRadius: 10,
     elevation: 5,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 15,
   },
   modalInput: {
     borderBottomWidth: 1,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     marginBottom: 20,
     fontSize: 16,
     padding: 5,
   },
   modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "flex-end",
   },
   cancelButton: {
     padding: 10,
@@ -411,40 +401,39 @@ const styles = StyleSheet.create({
   },
   addButton: {
     padding: 10,
-    backgroundColor: '#5AC8FA',
+    backgroundColor: "#5AC8FA",
     borderRadius: 5,
   },
   //물품 추가 스타일
   fabMenuBox: {
-  position: "absolute",
-  bottom: 95,
-  right: 20,
-  backgroundColor: "#FFFFFF",
-  borderRadius: 12,
-  paddingVertical: 10,
-  width: 180,
+    position: "absolute",
+    bottom: 95,
+    right: 20,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    paddingVertical: 10,
+    width: 180,
 
-  shadowColor: "#000",
-  shadowOpacity: 0.18,
-  shadowRadius: 6,
-  shadowOffset: { width: 0, height: 3 },
-  elevation: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 6,
 
-  zIndex: 100,
-},
+    zIndex: 100,
+  },
 
-fabMenuItem: {
-  flexDirection: "row",
-  alignItems: "center",
-  paddingVertical: 10,
-  paddingHorizontal: 14,
-},
+  fabMenuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
 
-fabMenuText: {
-  marginLeft: 10,
-  fontSize: 15,
-  color: "#333",
-  fontWeight: "500",
-},
-
+  fabMenuText: {
+    marginLeft: 10,
+    fontSize: 15,
+    color: "#333",
+    fontWeight: "500",
+  },
 });

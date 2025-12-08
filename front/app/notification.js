@@ -1,23 +1,53 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Animated } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
-
-// [임시 데이터]
-const INITIAL_NOTIFICATIONS = [
-    { id: '1', type: 'STOCK', title: '재고 부족', body: '햇반이 2개 남았습니다', time: '2시간 전' },
-    { id: '2', type: 'EXPIRY', title: '유통기한 임박', body: '콩나물 유통기한 D-3일', time: '7시간 전' },
-    { id: '3', type: 'MEMBER', title: '그룹 멤버 참여', body: '"홍길동"님이 참여했습니다', time: '2일 전' },
-    { id: '4', type: 'NOTICE', title: '공지사항', body: '서버 점검 안내 (00:00 ~ 02:00)', time: '3일 전' },
-];
+import { useRouter, useFocusEffect } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE_URL } from "../config/apiConfig"; // API 주소 설정 파일
 
 const NotificationScreen = () => {
     const router = useRouter();
-    const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+    const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(false);
 
-    // 1. 전체 삭제 핸들러
+    // 1. 화면에 들어올 때마다 서버에서 알림 목록 새로고침
+    useFocusEffect(
+        useCallback(() => {
+            fetchNotifications();
+        }, [])
+    );
+
+    // [API] 내 알림 목록 조회
+    const fetchNotifications = async () => {
+        try {
+            setLoading(true);
+            const token = await AsyncStorage.getItem("userToken");
+            if (!token) {
+                // 로그인 안 된 상태면 무시 혹은 로그인 화면으로
+                return;
+            }
+
+            const response = await axios.get(`${API_BASE_URL}/api/v1/notifications`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            // 백엔드 응답: { status: "OK", data: [...] }
+            // 최신 알림이 위로 오도록(이미 정렬되어 올 수도 있지만) 확인
+            const data = response.data.data;
+            setNotifications(data); 
+
+        } catch (error) {
+            console.error("알림 조회 실패:", error);
+            // Alert.alert("오류", "알림을 불러오지 못했습니다.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // [API] 전체 삭제 핸들러
     const handleDeleteAll = () => {
         if (notifications.length === 0) return;
         
@@ -26,64 +56,94 @@ const NotificationScreen = () => {
             { 
                 text: "삭제", 
                 style: "destructive", 
-                onPress: () => setNotifications([]) // API 필요
+                onPress: async () => {
+                    try {
+                        const token = await AsyncStorage.getItem("userToken");
+                        await axios.delete(`${API_BASE_URL}/api/v1/notifications`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                        setNotifications([]); // 화면에서도 즉시 비움
+                        Alert.alert("성공", "모든 알림이 삭제되었습니다.");
+                    } catch (e) {
+                        console.error("전체 삭제 실패:", e);
+                        Alert.alert("오류", "삭제에 실패했습니다.");
+                    }
+                }
             }
         ]);
     };
 
-    // 2. 개별 삭제 핸들러 (밀어서 삭제)
-    const handleDeleteItem = (id) => {
-        setNotifications(prev => prev.filter(item => item.id !== id));
-        // TODO: 백엔드 개별 삭제 API
+// [API] 개별 삭제 핸들러
+    const handleDeleteItem = async (id) => {
+        try {
+            const token = await AsyncStorage.getItem("userToken");
+            // URL은 그대로 /notifications/{id} 형식이면 id만 넘기면 됩니다.
+            await axios.delete(`${API_BASE_URL}/api/v1/notifications/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // ✅ 수정됨: 목록에서 지울 때도 notifId로 비교
+            setNotifications(prev => prev.filter(item => item.notifId !== id));
+        } catch (e) {
+            console.error("개별 삭제 실패:", e);
+            Alert.alert("오류", "삭제하지 못했습니다.");
+        }
     };
 
-    // 3. 타입별 아이콘 가져오기
+    // 3. 타입별 아이콘 가져오기 (백엔드 Topic 기준)
     const getIconByType = (type) => {
         switch (type) {
-            case 'STOCK': // 재고 부족 (노란색 주의)
+            case 'LOW_STOCK': // 재고 부족 (기존 유지)
                 return <MaterialCommunityIcons name="alert" size={28} color="#FFC107" />;
-            case 'EXPIRY': // 유통기한 (빨간색 시계)
+            
+            case 'EXPIRY_SOON': // ✅ 유통기한 임박 (이름 변경됨)
                 return <MaterialCommunityIcons name="clock-alert-outline" size={28} color="#FF5252" />;
-            case 'MEMBER': // 멤버 (파란색 사람)
+            
+            case 'NEW_MEMBER': // ✅ 새 멤버 가입 (이름 변경됨)
                 return <Ionicons name="person-add-outline" size={28} color="#5DADE2" />;
+            
+            case 'PURCHASE_DONE': // ✅ 구매 완료 (새로 추가됨)
+                return <MaterialCommunityIcons name="shopping-outline" size={28} color="#4CAF50" />;
+                
             default: // 기타
                 return <MaterialCommunityIcons name="bell-outline" size={28} color="#999" />;
         }
     };
 
-    // 4. 스와이프 삭제
-    const renderRightActions = (progress, dragX, id) => {
-        const trans = dragX.interpolate({
-            inputRange: [0, 50, 100, 101],
-            outputRange: [-20, 0, 0, 1],
-        });
-        
-        return (
-            <TouchableOpacity onPress={() => handleDeleteItem(id)} style={styles.deleteAction}>
-                <View style={styles.deleteActionContent}>
-                    <MaterialCommunityIcons name="trash-can-outline" size={30} color="white" />
-                    <Text style={styles.deleteText}>삭제</Text>
-                </View>
-            </TouchableOpacity>
-        );
+    // 날짜 포맷팅 함수 (예: 2024-05-20T10:00... -> 2024-05-20 10:00)
+    const formatTime = (isoString) => {
+        if (!isoString) return "";
+        const date = new Date(isoString);
+        return date.toLocaleString(); // 간단하게 기기 설정에 맞는 시간 표시
+        // 또는 원하는 포맷으로 커스텀 가능
     };
 
-    // 5. 알림 아이템 렌더링
+
+// 5. 알림 아이템 렌더링
     const renderItem = ({ item }) => (
-        <Swipeable renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item.id)}>
-            <View style={styles.itemContainer}>
-                {/* 왼쪽 아이콘 */}
+        <View style={styles.itemContainer}>
+            <View style={styles.leftContent}>
                 <View style={styles.iconBox}>
-                    {getIconByType(item.type)}
+                    {getIconByType(item.topic)} 
                 </View>
                 
                 <View style={styles.textBox}>
                     <Text style={styles.itemTitle}>{item.title}</Text>
-                    <Text style={styles.itemBody} numberOfLines={1}>{item.body}</Text>
-                    <Text style={styles.itemTime}>{item.time}</Text>
+                    <Text style={styles.itemBody} numberOfLines={2}>{item.body}</Text>
+                    <Text style={styles.itemTime}>{formatTime(item.sentAt)}</Text>
                 </View>
             </View>
-        </Swipeable>
+
+            {/* 오른쪽 삭제 버튼 */}
+            <TouchableOpacity 
+                // ✅ 수정됨: item.id 대신 item.notifId 사용
+                onPress={() => handleDeleteItem(item.notifId)} 
+                style={styles.deleteBtn}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+                <MaterialCommunityIcons name="close" size={20} color="#aaa" />
+            </TouchableOpacity>
+        </View>
     );
 
     return (
@@ -106,13 +166,16 @@ const NotificationScreen = () => {
                 {/* --- 알림 리스트 --- */}
                 <FlatList
                     data={notifications}
-                    keyExtractor={item => item.id}
+                    // 백엔드 DTO에 따라 고유 ID가 notificationId 일 확률이 높습니다.
+                    keyExtractor={item => item.notificationId || item.notifId} 
                     renderItem={renderItem}
                     contentContainerStyle={styles.listContent}
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
                             <MaterialCommunityIcons name="bell-sleep-outline" size={60} color="#ccc" />
-                            <Text style={styles.emptyText}>새로운 알림이 없습니다.</Text>
+                            <Text style={styles.emptyText}>
+                                {loading ? "알림을 불러오는 중..." : "새로운 알림이 없습니다."}
+                            </Text>
                         </View>
                     }
                 />
@@ -144,18 +207,28 @@ const styles = StyleSheet.create({
 
     // 리스트 스타일
     listContent: { paddingBottom: 50 },
+    
+    // [수정] 아이템 컨테이너 (X 버튼 배치를 위해 수정)
     itemContainer: {
-        flexDirection: 'row',
+        flexDirection: 'row', // 가로 배치
+        justifyContent: 'space-between', // 내용물과 X 버튼 사이 벌리기
         padding: 20,
         backgroundColor: 'white',
         borderBottomWidth: 1,
         borderBottomColor: '#f0f0f0',
-        alignItems: 'center',
+        alignItems: 'flex-start', // 위쪽 정렬
+    },
+    // [추가] 왼쪽 내용물 묶음 (아이콘 + 텍스트)
+    leftContent: {
+        flexDirection: 'row',
+        flex: 1, // 남은 공간 다 차지
+        marginRight: 10, // X 버튼과 간격
     },
     iconBox: {
         marginRight: 15,
-        width: 40,
+        width: 30,
         alignItems: 'center',
+        marginTop: 2, // 텍스트 줄맞춤 보정
     },
     textBox: {
         flex: 1,
@@ -176,22 +249,10 @@ const styles = StyleSheet.create({
         color: '#999',
     },
 
-    // 스와이프 삭제 버튼 스타일
-    deleteAction: {
-        backgroundColor: '#FF5252',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 80,
-        height: '100%',
-    },
-    deleteActionContent: {
-        alignItems: 'center',
-    },
-    deleteText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 12,
-        marginTop: 2,
+    // [추가] 개별 삭제(X) 버튼 스타일
+    deleteBtn: {
+        padding: 5,
+        marginTop: -5, // 살짝 위로
     },
 
     // 빈 화면 스타일
@@ -205,5 +266,4 @@ const styles = StyleSheet.create({
         color: '#999',
     }
 });
-
 export default NotificationScreen;
