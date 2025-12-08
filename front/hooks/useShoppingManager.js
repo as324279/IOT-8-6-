@@ -15,17 +15,41 @@ export const useShoppingManager = () => {
   const [items, setItems] = useState([]);
   const [active, setActive] = useState("need"); // 'need' or 'buy'
   const [newInput, setNewInput] = useState(false);
+  const [commentModal, setCommentModal] = useState(false); // 댓글창 열기
+  const [listid, setListid] = useState(null);
+
 
   // 화면 포커스 시 데이터 갱신
   useFocusEffect(
     useCallback(() => {
       if (currentGroupId) {
+        fetchShoppingListId();
         fetchShoppingList();
       } else {
         fetchMyRooms();
       }
     }, [currentGroupId])
   );
+
+
+  //쇼핑리스트 아이디 가져오기.
+  const fetchShoppingListId = async () => {
+  try {
+    const token = await AsyncStorage.getItem("userToken");
+
+    const res = await axios.get(
+      `${API_BASE_URL}/api/v1/groups/${currentGroupId}/shopping-lists`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (res.data.data.length > 0) {
+      setListid(res.data.data[0].listId);
+    }
+  } catch (e) {
+    console.log("리스트 ID 조회 실패:", e);
+  }
+};
+
 
   // [API] 내 방 목록 조회
   const fetchMyRooms = async () => {
@@ -112,7 +136,7 @@ export const useShoppingManager = () => {
       const token = await AsyncStorage.getItem("userToken");
       await axios.patch(
         `${API_BASE_URL}/api/v1/shopping-items/${id}`,
-        { count: newQuantity },
+        { desiredQty: newQuantity },
         { headers: { Authorization: `Bearer ${token}` } }
       );
     } catch (error) {
@@ -143,6 +167,25 @@ export const useShoppingManager = () => {
       Alert.alert("오류", "구매 처리에 실패했습니다.");
     }
   };
+
+   //아이템 삭제 함수
+  const DeleteItem = async (itemId) => {
+  try {
+    const token = await AsyncStorage.getItem("userToken");
+
+    await axios.delete(
+      `${API_BASE_URL}/api/v1/shopping-items/${itemId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // 삭제 후 목록 새로고침
+    fetchShoppingList();
+  } catch (error) {
+    console.log("삭제 실패:", error.response?.data || error);
+    Alert.alert("오류", "삭제에 실패했습니다.");
+  }
+};
+
 
   // 로컬 상태 변경 핸들러들
   const handleSelectRoom = (room) => {
@@ -197,5 +240,8 @@ export const useShoppingManager = () => {
     handleQuantityChange,
     handleToggleSelect,
     handleBatchComplete,
+    listid,
+    DeleteItem,
+    commentModal
   };
 };

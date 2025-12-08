@@ -5,13 +5,15 @@ export default function NewItemForm({ onAdd, onCancel }) {
 
   const [newName, setNewName] = useState("");
   const [newNote, setNewNote] = useState("");
+  const [newCount, setNewCount] = useState("");
 
   const handleAddItem = () => {
     if (!newName.trim()) return; 
     
-    onAdd(newName, newNote);
+    onAdd(newName, newNote,parseInt(newCount,10));
     setNewName("");
     setNewNote("");
+    setNewCount("");
     Keyboard.dismiss(); // 키보드 내리기
   };
 
@@ -28,6 +30,15 @@ export default function NewItemForm({ onAdd, onCancel }) {
             placeholderTextColor={"#aaa"}
             autoFocus={true}
         />
+
+        <TextInput
+            value={newCount}
+            onChangeText={setNewCount}
+            style={[styles.input, styles.noteInput]}
+            placeholder='수량'
+            placeholderTextColor={"#aaa"}
+        />
+
         <TextInput
             value={newNote}
             onChangeText={setNewNote}
@@ -35,6 +46,8 @@ export default function NewItemForm({ onAdd, onCancel }) {
             placeholder='메모 (선택사항)'
             placeholderTextColor={"#aaa"}
         />
+
+
         
         <View style={styles.buttonRow}>
             {/* 취소 버튼 */}

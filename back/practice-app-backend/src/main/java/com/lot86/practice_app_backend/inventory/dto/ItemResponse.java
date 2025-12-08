@@ -3,12 +3,14 @@ package com.lot86.practice_app_backend.inventory.dto;
 import com.lot86.practice_app_backend.inventory.entity.Item;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
 @Getter
+@Setter
 @AllArgsConstructor
 public class ItemResponse {
     private UUID itemId;
