@@ -13,6 +13,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Image
 } from "react-native";
 import RoomTabs from "../components/room/RoomTabs";
 import axios from "axios";
@@ -26,16 +27,33 @@ const ItemCard = ({ item }) => {
 
   const handlePress = () => {
     console.log("클릭한 아이템 정보:", item);
-
     router.push({
       pathname: "/itemDetail",
       params: { itemId: item.itemId },
     });
   };
 
+  // photoUrl 체크
+  const hasImage = item.photoUrl && item.photoUrl.length > 1;
+
+  // 풀 이미지 URL 생성
+  const fullImageUrl = hasImage
+    ? `${API_BASE_URL}${item.photoUrl}` // 핵심!
+    : null;
+
   return (
     <TouchableOpacity style={styles.itemCard} onPress={handlePress}>
-      <View style={styles.itemImagePlaceholder} />
+      {/* URL 이미지 표시 */}
+      {fullImageUrl ? (
+        <Image
+          source={{ uri: fullImageUrl }}
+          style={styles.itemImage}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={styles.itemImagePlaceholder} />
+      )}
+
       <Text style={styles.itemText}>{item.name}</Text>
 
       <TouchableOpacity onPress={handlePress}>
@@ -44,6 +62,7 @@ const ItemCard = ({ item }) => {
     </TouchableOpacity>
   );
 };
+
 
 const InventoryScreen = () => {
   const router = useRouter();
@@ -436,4 +455,18 @@ const styles = StyleSheet.create({
     color: "#333",
     fontWeight: "500",
   },
+  itemImage: {
+  width: 40,
+  height: 40,
+  borderRadius: 8,
+  marginRight: 16,
+},
+
+itemImagePlaceholder: {
+  width: 40,
+  height: 40,
+  borderRadius: 8,
+  backgroundColor: "#e9e9e9",
+  marginRight: 16,
+},
 });

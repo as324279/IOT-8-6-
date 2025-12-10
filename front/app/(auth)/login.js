@@ -87,6 +87,14 @@ const LoginScreen = () => {
 
     return(
         <View style = {styles.container}>
+
+            <View style={styles.topBar}>
+                    <View style={{ flex: 1 }} />
+                      <Pressable onPress={() => router.back()} style={styles.closeTextButton}>
+                        <Text style={styles.closeText}>닫기</Text>
+                      </Pressable>
+                  </View>
+                
             <Text style = {styles.HeaderText}>로그인해주세요!</Text>
 
             {/* --- 이메일 입력창 --- */}
@@ -196,10 +204,28 @@ const styles = StyleSheet.create({
     },
 
     HeaderText: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: 'black',
-        marginBottom: 40,
-        lineHeight: 40, 
-    }
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: 'black',
+    marginBottom: 40,
+    lineHeight: 40, 
+    marginTop: 40, 
+    },
+    topBar: {
+  flexDirection: "row",
+  width: "100%",
+  justifyContent: "flex-end",
+  alignItems: "center",
+  marginBottom: 15,
+},
+
+closeTextButton: {
+  padding: 5,
+},
+
+closeText: {
+  fontSize: 16,
+  fontWeight: "600",
+  color: "#555",
+},
 });

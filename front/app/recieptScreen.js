@@ -6,13 +6,25 @@ import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleShee
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { APIConnectionError } from 'openai';
 import { API_BASE_URL } from '../config/apiConfig';
+import DateTimePicker from '@react-native-community/datetimepicker';
+
 
 const RecieptScreen = () => {
     const router = useRouter();
     const { imageUri, items, rawText, group_id, created_by,locationId } = useLocalSearchParams();
-    const parsedItems = JSON.parse(items);  
-    const [itemList, setItemList] = useState(parsedItems);
     const [loading, setLoading] = useState(false);
+    const [currentPickerIndex, setCurrentPickerIndex] = useState(null);
+    const [isDateModalVisible, setIsDateModalVisible] = useState(false);
+
+
+    const parsedItems = JSON.parse(items).map(item => ({
+      ...item,
+      expiry_date: item.expiry_date ?? "",
+      dateObj: item.expiry_date ? new Date(item.expiry_date) : new Date(),
+      photoBytes: item.photoBytes ?? null,
+    }));
+
+    const [itemList, setItemList] = useState(parsedItems);
 
     useEffect ( () => {
       if(!items) return;
@@ -28,87 +40,142 @@ const RecieptScreen = () => {
     const back = () => {
       router.push("./mainHome");
     }
-      const cameraImage = async (index) => {
-    
-        const permission = await ImagePicker.requestCameraPermissionsAsync();
-          if (!permission.granted) {
-          alert("카메라 권한이 필요합니다.");
-          return;
-       }
-    
-        const result = await ImagePicker.launchCameraAsync({
-          mediaTypes:ImagePicker.MediaTypeOptions.Images,
-          quality:1,
-          base64:false
-        });
-    
-        if (!result.canceled) {
-         
-        }
-      }
-    
-      const addItem = () => {
-      setItemList([
-        ...itemList,
-        {ItemName:"", ItemCount: "", expiry_date: "", photo_url: ""}
-      ]);
-    };
+    const uploadImageToServer = async (uri) => {
+  const token = await AsyncStorage.getItem("userToken");
 
-    const updateItem = (index, field, value) => {
-          const updated = [...itemList];
-          updated[index][field] = value;
-          setItemList(updated);
-    };
-    
-  const SaveDB = async () => {
-  try {
-    setLoading(true);
-    const token = await AsyncStorage.getItem("userToken");
-    const gid = Array.isArray(group_id) ? group_id[0] : group_id;
+  const fileName = uri.split("/").pop();
+  const fileType = "image/jpeg";
 
-    for (const item of itemList){
-      let url;
+  const formData = new FormData();
+  formData.append("file", {
+    uri,
+    type: fileType,
+    name: fileName,
+  });
 
+  const response = await fetch(`${API_BASE_URL}/api/v1/images/upload`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      // 절대 직접 multipart/form-data 넣지 말기!!
+    },
+    body: formData,
+  });
 
-      if (!locationId || locationId=== null) {
-        url = `${API_BASE_URL}/api/v1/groups/${gid}/items`;
-      }else {
-        url = `${API_BASE_URL}/api/v1/locations/${locationId}/items`;
-      }
-        const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: item.ItemName?.trim(),
-          quantity: Number(item.ItemCount),
-          expiryDate: item.expiry_date?.trim() || null,
-          photoUrl: item.photo_url || null,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.log("스프링 응답 오류:", errorBody);
-        throw new Error("Spring 저장 실패");
-      }
-
-      const dataItem = await response.json();
-      console.log("저장 결과:", dataItem);
-    }
-
-    Alert.alert("등록이 완료되었습니다.");
-    router.push({ pathname: "mainHome" });
-
-  } catch (error) {
-    console.log("스프링저장 오류", error);
-  } finally {
-    setLoading(false);
+  if (!response.ok) {
+    const err = await response.text();
+    console.log("이미지 업로드 오류:", err);
+    throw new Error("업로드 실패");
   }
+
+  const data = await response.json();
+
+  // ApiResponse 구조 때문에 data.data.imageUrl 사용
+  return data.data.imageUrl;
 };
 
+
+  // 카메라 촬영 + 업로드
+  const cameraImage = async (index) => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("카메라 권한이 필요합니다.");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+
+      try {
+        const url = await uploadImageToServer(uri);
+        updateItem(index, "photoUrl", url);
+      } catch (e) {
+        console.log("업로드 실패", e);
+        Alert.alert("이미지 업로드 실패");
+      }
+    }
+  };
+
+  const onChangeDate = (index, event, selectedDate) => {
+  if (!selectedDate) return;
+
+  const updated = [...itemList];
+  updated[index].expiry_date = selectedDate.toISOString().split("T")[0];
+  updated[index].dateObj = selectedDate;
+  setItemList(updated);
+
+  if (Platform.OS === "android") {
+    setCurrentPickerIndex(null); // Android는 닫기
+  }
+};
+//물품 수정
+const updateItem = (index, field, value) => {
+  setItemList((prevList) => {
+    if (!prevList || !prevList[index]) return prevList;
+
+    const updated = [...prevList];
+    updated[index] = { ...updated[index], [field]: value };
+    return updated;
+  });
+};
+//물품 추가
+  const addItem = () => {
+    setItemList([
+      ...itemList,
+      { ItemName: "", ItemCount: "", expiry_date: "", photoUrl: null }
+    ]);
+  };
+//물품 삭제
+const deleteItem = (index) => {
+  setItemList((prevList) => prevList.filter((_, i) => i !== index));
+};
+
+
+  const SaveDB = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem("userToken");
+      const gid = Array.isArray(group_id) ? group_id[0] : group_id;
+
+      for (const item of itemList) {
+        const url = !locationId
+          ? `${API_BASE_URL}/api/v1/groups/${gid}/items`
+          : `${API_BASE_URL}/api/v1/locations/${locationId}/items`;
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: item.ItemName?.trim(),
+            quantity: Number(item.ItemCount),
+            expiryDate: item.expiry_date?.trim() || null,
+            photoUrl: item.photoUrl || null,
+          }),
+        });
+
+        if (!response.ok) {
+          const err = await response.text();
+          console.log("저장 오류:", err);
+          throw new Error("저장 실패");
+        }
+      }
+
+      Alert.alert("등록 완료!");
+      router.push("mainHome");
+    } catch (e) {
+      console.log("SaveDB 오류:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
     
       return (
         <View style={styles.container}>
@@ -121,12 +188,21 @@ const RecieptScreen = () => {
               
               {itemList.length > 0 &&  (
                 itemList.map( (item,idx) => (
-                  <View key = {idx} style = {styles.inputContainer}>
-                    <TouchableOpacity onPress={cameraImage}>
-                      <Ionicons name = "camera" size ={30} color = "black"></Ionicons>
+                  <View key={idx} style={styles.inputContainer}>
+
+                    {/* 우측 상단 삭제 버튼 */}
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() => deleteItem(idx)}
+                    >
+                      <Ionicons name="trash" size={22} color="red" />
                     </TouchableOpacity>
 
-                    
+                    {/* 기존 카메라 버튼 */}
+                    <TouchableOpacity onPress={() => cameraImage(idx)}>
+                      <Ionicons name="camera" size={30} color="black" />
+                    </TouchableOpacity>
+
 
                     <View style = {styles.mini}>
                       <Text style = {styles.title}>수량</Text>
@@ -154,16 +230,21 @@ const RecieptScreen = () => {
     
                     <View style = {styles.spec} />
                     
-                    <View style = {styles.mini}>
-                      <Text style = {styles.title}>유통기한</Text>
-                    <TextInput 
-                      style = {styles.input}
-                      value = {item.expiry_date}
-                      onChangeText={(text) => updateItem(idx, "expiry_date", text)}
-                      underlineColor='transparent'
-                      activeUnderlineColor='transparent'
-                    />
-                    </View>
+                    <View style={styles.mini}>
+                    <Text style={styles.title}>유통기한</Text>
+
+                    <TouchableOpacity
+                      style={[styles.input, { flexDirection: "row", alignItems: "center", paddingVertical: 10 }]}
+                      onPress={() => setCurrentPickerIndex(idx)}
+                    >
+                      <Ionicons name="calendar-outline" size={20} color="#5AC8FA" style={{ marginRight: 6 }} />
+
+                      <Text style={{ fontSize: 15, color: item.expiry_date ? "#000" : "#999" }}>
+                        {item.expiry_date || "날짜 선택"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
                   </View>
                     
                   
@@ -187,7 +268,27 @@ const RecieptScreen = () => {
             </ScrollView>
             </KeyboardAvoidingView>
     
-            
+                      {currentPickerIndex !== null && (
+            <View style={styles.pickerWrapper}>
+              <DateTimePicker
+                value={itemList[currentPickerIndex].dateObj || new Date()}
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                onChange={(event, date) => onChangeDate(currentPickerIndex, event, date)}
+                themeVariant="light"
+              />
+
+              {Platform.OS === "ios" && (
+                <TouchableOpacity
+                  style={styles.confirmButton}
+                  onPress={() => setCurrentPickerIndex(null)}
+                >
+                  <Text style={styles.confirmText}>확인</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
           
         </View>
       );
@@ -300,5 +401,31 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
     textAlign:"center"
-  }
+  },
+  deleteButton: {
+  position: "absolute",
+  top: 10,
+  right: 10,
+  padding: 5,
+  zIndex: 10,
+},
+pickerWrapper: {
+  position: "absolute",
+  bottom: 0,
+  left: 0,
+  right: 0,
+  backgroundColor: "#fff",
+  padding: 12,
+  borderTopLeftRadius: 16,
+  borderTopRightRadius: 16,
+},
+confirmButton: {
+  padding: 15,
+  alignItems: "center",
+},
+confirmText: {
+  fontSize: 16,
+  color: "#007AFF",
+},
+
 });

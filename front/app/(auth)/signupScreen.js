@@ -151,6 +151,14 @@ const SignupScreen = () => {
 
   return (
     <View style={styles.container}>
+
+      <View style={styles.topBar}>
+        <View style={{ flex: 1 }} />
+          <Pressable onPress={() => router.back()} style={styles.closeTextButton}>
+            <Text style={styles.closeText}>닫기</Text>
+          </Pressable>
+      </View>
+
       <Text style={styles.HeaderText}>반갑습니다. 정보를 입력해주세요!</Text>
 
       <View style={styles.inputContainer}>
@@ -323,6 +331,7 @@ const styles = StyleSheet.create({
     color: "black",
     marginBottom: 30,
     lineHeight: 36,
+    marginTop:10
   },
   inputContainer: {
     flexDirection: "row",
@@ -424,4 +433,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  topBar: {
+  flexDirection: "row",
+  width: "100%",
+  justifyContent: "flex-end",
+  alignItems: "center",
+  marginBottom: 15,
+},
+
+closeTextButton: {
+  padding: 5,
+},
+
+closeText: {
+  fontSize: 16,
+  fontWeight: "600",
+  color: "#555",
+},
+
 });
