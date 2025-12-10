@@ -1,12 +1,45 @@
-import { useRouter } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router'; // usePathname 추가 (화면 이동 감지용)
 import { Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'; 
+import { useState, useEffect, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { API_BASE_URL } from '../config/apiConfig'; // 경로가 맞는지 확인해주세요
 
-// [수정] onNotificationPress 제거 (컴포넌트 내부에서 처리)
-const TopHeader = ({ showBack = false, showIcons = true, title, onBackPress }) =>{
+const TopHeader = ({ showBack = false, showIcons = true, title, onBackPress }) => {
   const router = useRouter();
+  const pathname = usePathname(); // 현재 화면 경로 확인
+  const [hasNew, setHasNew] = useState(false);
 
-  // 뒤로가기 버튼
+  // 화면이 바뀔 때마다(특히 다른 탭 갔다가 돌아올 때) 알림 체크
+  useEffect(() => {
+    if (showIcons) {
+      checkUnread();
+    }
+  }, [pathname]); // pathname이 변경될 때마다 실행
+
+const checkUnread = async () => {
+  try {
+    const token = await AsyncStorage.getItem("userToken");
+    if (!token) return;
+
+    const res = await axios.get(`${API_BASE_URL}/api/v1/notifications`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const notifications = res.data.data || [];
+    
+    const hasUnreadItem = notifications.some(n => {
+        return (n.read === false) || (n.isRead === false);
+    });
+    
+    setHasNew(hasUnreadItem);
+    
+  } catch (error) {
+    console.log("알림 체크 실패:", error);
+  }
+};
+
   const BackButton = () => (
       <Pressable
           style={styles.actionButtonContainer}
@@ -16,14 +49,19 @@ const TopHeader = ({ showBack = false, showIcons = true, title, onBackPress }) =
       </Pressable>
   );
 
-  // [수정] 알림 버튼: 직접 페이지 이동
   const NotificationButton = () => (
       <Pressable 
           style={styles.actionButtonContainer} 
-          onPress={() => router.push('/notification')} // 👈 바로 이동!
+          onPress={() => {
+            setHasNew(false); // 누르면 즉시 빨간 점 끄기 (사용자 경험상 좋음)
+            router.push('/notification');
+          }} 
       >
-          <MaterialIcons name="notifications" size={24} color="#000000" />
-          {/* (나중에 안 읽은 알림 있으면 여기에 빨간 점 Badge 추가 가능) */}
+          <View>
+            <MaterialIcons name="notifications" size={24} color="#000000" />
+            {/* 빨간 점 (Badge) */}
+            {hasNew && <View style={styles.badge} />}
+          </View>
       </Pressable>
   );
 
@@ -31,17 +69,14 @@ const TopHeader = ({ showBack = false, showIcons = true, title, onBackPress }) =
     <>
       <StatusBar backgroundColor="#53ACD9" barStyle="dark-content" />
       <View style={styles.header}>
-            {/* LEFT: 뒤로가기 */}
             <View style={styles.leftContent}>
                 {showBack ? <BackButton /> : <View style={styles.emptySpace} />} 
             </View>
 
-            {/* CENTER: 제목 */}
             <View style={styles.centerContent}>
                 <Text style={styles.appName}>{title || '채움'}</Text>
             </View>
 
-            {/* RIGHT: 알림 버튼 */}
             <View style={styles.rightContent}>
                 {showIcons ? <NotificationButton /> : <View style={styles.emptySpace} />}
             </View>
@@ -78,4 +113,14 @@ const styles = StyleSheet.create({
     color: '#000',
     textAlign: 'center',
   },
+  badge: {
+    position: 'absolute',
+    right: -2, // 아이콘 위치에 따라 미세 조정
+    top: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'red',
+    zIndex: 10,
+  }
 });

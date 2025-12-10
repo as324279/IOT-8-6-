@@ -54,7 +54,7 @@ export default function ItemDetailScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false); // 달력 표시 여부
 
   const [alertQuantity, setAlertQuantity] = useState(0);
-  const [isAlertOn, setIsAlertOn] = useState(true);
+  const [isAlertOn, setIsAlertOn] = useState(false);
 
   useEffect(() => {
     if (itemId) fetchItemDetail();
@@ -233,25 +233,32 @@ export default function ItemDetailScreen() {
 
         {/* 알림 설정 */}
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>재고 알림 설정</Text>
-          <View style={styles.alertRow}>
-            <View style={styles.stepperBoxSmall}>
-              <TouchableOpacity onPress={() => setAlertQuantity((q) => (q > 0 ? q - 1 : 0))} style={styles.stepperButtonSmall}>
-                <Text style={styles.stepperTextSmall}>-</Text>
-              </TouchableOpacity>
-              <Text style={styles.stepperValueSmall}>{alertQuantity}</Text>
-              <TouchableOpacity onPress={() => setAlertQuantity((q) => q + 1)} style={styles.stepperButtonSmall}>
-                <Text style={styles.stepperTextSmall}>+</Text>
-              </TouchableOpacity>
-              <Text style={styles.alertUnit}> 개 이하일 때</Text>
-            </View>
-            <Switch
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+             <Text style={styles.label}>재고 알림 설정</Text>
+             {/* 스위치를 라벨 옆으로 이동 */}
+             <Switch
               trackColor={{ false: "#767577", true: "#5AC8FA" }}
               thumbColor={"#f4f3f4"}
               onValueChange={setIsAlertOn}
               value={isAlertOn}
             />
           </View>
+          
+          {/* 스위치가 켜져(true) 있을 때만 아래 설정창이 나타남 */}
+          {isAlertOn && (
+            <View style={styles.alertRow}>
+              <View style={styles.stepperBoxSmall}>
+                <TouchableOpacity onPress={() => setAlertQuantity((q) => (q > 0 ? q - 1 : 0))} style={styles.stepperButtonSmall}>
+                  <Text style={styles.stepperTextSmall}>-</Text>
+                </TouchableOpacity>
+                <Text style={styles.stepperValueSmall}>{alertQuantity}</Text>
+                <TouchableOpacity onPress={() => setAlertQuantity((q) => q + 1)} style={styles.stepperButtonSmall}>
+                  <Text style={styles.stepperTextSmall}>+</Text>
+                </TouchableOpacity>
+                <Text style={styles.alertUnit}> 개 이하일 때</Text>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* 버튼 */}
