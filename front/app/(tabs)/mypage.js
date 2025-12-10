@@ -8,12 +8,12 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  SafeAreaView,
   Alert,
   Modal,
   Pressable,
-  // Platform 제거됨
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context"; 
+
 import axios from "axios";
 import TopHeader from "../../components/TopHeader";
 import { useAuth } from "../../components/AuthProvider";
@@ -38,7 +38,7 @@ export default function MyPageScreen() {
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
 
-  // 1. 내 정보 불러오기 (DB의 'name' 컬럼을 가져옴)
+  // 1. 내 정보 불러오기
   useEffect(() => {
     const fetchMyInfo = async () => {
       if (!token) return;
@@ -48,13 +48,11 @@ export default function MyPageScreen() {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        // 백엔드 응답 구조 확인 (DB 컬럼이 name이므로 name을 찾습니다)
         const userData = response.data.data || response.data;
 
         if (userData.name) {
           setNickname(userData.name);
         } else if (userData.nickname) {
-          // 혹시 DTO에서 nickname으로 변환해서 줄 수도 있으니 대비
           setNickname(userData.nickname);
         }
       } catch (error) {
@@ -65,7 +63,7 @@ export default function MyPageScreen() {
     fetchMyInfo();
   }, [token]);
 
-  // 2. 닉네임 변경 (DB의 'name'을 수정)
+  // 2. 닉네임 변경
   const handleSaveNickname = async () => {
     if (!nickname.trim()) {
       Alert.alert("오류", "닉네임을 입력해주세요.");
@@ -74,7 +72,7 @@ export default function MyPageScreen() {
     try {
       await axios.patch(
         `${API_BASE_URL}/api/v1/users/me`,
-        { name: nickname }, // DTO에 맞춰 'name'으로 전송
+        { name: nickname }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setIsEditing(false);
@@ -85,7 +83,7 @@ export default function MyPageScreen() {
     }
   };
 
-  // 3. 로그아웃 (앱 전용 깔끔 버전)
+  // 3. 로그아웃
   const handleLogout = async () => {
     Alert.alert("로그아웃", "정말 로그아웃 하시겠습니까?", [
       { text: "취소", style: "cancel" },
@@ -134,7 +132,8 @@ export default function MyPageScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+    // ▼▼▼ [수정 2] edges={["top"]} 추가하여 상단 안전영역 확보
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top"]}>
       <TopHeader
         title="마이페이지"
         showBack={false}
@@ -203,7 +202,6 @@ export default function MyPageScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 탈퇴 버튼 영역 (클릭 범위 수정됨) */}
         <View style={styles.deleteAccountContainer}>
           <TouchableOpacity
             onPress={() => {
@@ -262,6 +260,7 @@ export default function MyPageScreen() {
 }
 
 const styles = StyleSheet.create({
+  // 스타일은 기존과 동일합니다.
   container: { flex: 1, backgroundColor: "#f9f9f9" },
   profileSection: {
     flexDirection: "row",
@@ -305,7 +304,6 @@ const styles = StyleSheet.create({
   },
   logoutButton: { paddingVertical: 18, paddingHorizontal: 20 },
   logoutText: { fontSize: 16, color: "#e74c3c" },
-
   deleteAccountContainer: {
     marginTop: 20,
     paddingHorizontal: 20,
@@ -317,7 +315,6 @@ const styles = StyleSheet.create({
     color: "#8e8e8e",
     textDecorationLine: "underline",
   },
-
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
