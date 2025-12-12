@@ -8,11 +8,8 @@ import { API_BASE_URL } from "../config/apiConfig";
 
 export const useItemDetailLogic = (itemId) => {
   const router = useRouter();
-  
-  // ▼▼▼ [추가] 여기서 group_id를 직접 꺼냅니다!
   const params = useLocalSearchParams();
   const group_id = params.group_id; 
-  // ▲▲▲
 
   // 기본 정보 State
   const [itemName, setItemName] = useState("");
@@ -33,6 +30,7 @@ export const useItemDetailLogic = (itemId) => {
 
   // 로딩 State
   const [loading, setLoading] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState(null);
 
   useEffect(() => {
     if (itemId) fetchItemDetail();
@@ -66,6 +64,7 @@ export const useItemDetailLogic = (itemId) => {
 
       setItemName(data.name || data.itemName || "");
       setQuantity(data.quantity || 0);
+      setPhotoUrl(data.photoUrl);
 
       // [수정] 백엔드 ItemResponse에는 groupId가 없습니다! 
       // 하지만 우리가 params로 group_id를 받아왔으므로 그걸 믿고 씁니다.
@@ -199,6 +198,7 @@ export const useItemDetailLogic = (itemId) => {
     alertQuantity, setAlertQuantity,
     isAlertOn, setIsAlertOn,
     loading,
+    photoUrl,
     handleSave,
     handleDelete,
     onChangeDate,

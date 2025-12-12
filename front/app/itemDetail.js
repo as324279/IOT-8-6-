@@ -8,11 +8,13 @@ import {
   TouchableOpacity,
   View,
   Platform,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { API_BASE_URL } from "../config/apiConfig";
 
 // 분리한 컴포넌트 & 훅 가져오기
 import TopHeader from "../components/TopHeader";
@@ -47,8 +49,8 @@ export default function ItemDetailScreen() {
     locations, selectedLocation, setSelectedLocation,
     expiryDate, dateObj,
     alertQuantity, setAlertQuantity,
-    isAlertOn, setIsAlertOn,
-    handleSave, handleDelete, onChangeDate,
+    isAlertOn, photoUrl, setIsAlertOn,
+    handleSave, handleDelete, onChangeDate, 
   } = useItemDetailLogic(itemId);
 
   // UI용 State (모달, 편집모드, 달력표시)
@@ -72,7 +74,15 @@ export default function ItemDetailScreen() {
         {/* 1. 이름 섹션 */}
         <View style={styles.profileSection}>
           <TouchableOpacity style={styles.profileImageContainer}>
-            <MaterialCommunityIcons name="camera-outline" size={40} color="#8e8e8e" />
+            {photoUrl ? (
+              <Image 
+                source={{ uri: `${API_BASE_URL}${photoUrl}` }} 
+                style={styles.fullImage} 
+                resizeMode="cover"
+              />
+            ) : (
+              <MaterialCommunityIcons name="camera-outline" size={40} color="#8e8e8e" />
+            )}
           </TouchableOpacity>
           <View style={styles.nameContainer}>
             {isEditingName ? (
@@ -86,6 +96,7 @@ export default function ItemDetailScreen() {
             ) : (
               <Text style={styles.nameText}>{itemName}</Text>
             )}
+            
             <TouchableOpacity onPress={() => setIsEditingName(!isEditingName)}>
               <MaterialCommunityIcons name="pencil-outline" size={24} color="#333" />
             </TouchableOpacity>
@@ -194,12 +205,29 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#f9f9f9" },
   container: { flex: 1, paddingHorizontal: 20 },
   
-  // 프로필
+  // 프로필 섹션
   profileSection: { flexDirection: "row", alignItems: "center", paddingVertical: 20 },
-  profileImageContainer: { width: 80, height: 80, borderRadius: 40, backgroundColor: "#e9e9e9", justifyContent: "center", alignItems: "center", marginRight: 20 },
+  
+  profileImageContainer: { 
+    width: 80, 
+    height: 80, 
+    borderRadius: 40, 
+    backgroundColor: "#e9e9e9", 
+    justifyContent: "center", 
+    alignItems: "center", 
+    marginRight: 20,
+    overflow: 'hidden'
+  },
+  fullImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+
   nameContainer: { flex: 1, flexDirection: "row", alignItems: "center" },
   nameText: { fontSize: 24, fontWeight: "bold", marginRight: 10 },
   nameInput: { flex: 1, fontSize: 24, fontWeight: "bold", borderBottomWidth: 1, borderColor: "#5AC8FA" },
+  
   dashedLine: { borderBottomWidth: 1, borderColor: "#ccc", borderStyle: "dashed", marginBottom: 20 },
   
   // 입력 공통
