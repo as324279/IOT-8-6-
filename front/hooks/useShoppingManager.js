@@ -92,7 +92,7 @@ export const useShoppingManager = () => {
   };
 
   // [API] 아이템 추가
-  const addItem = async (itemNameText, itemNote) => {
+  const addItem = async (itemNameText, itemNote, itemQty) => { // 👈 3번째 인자(수량) 추가
     if (!itemNameText.trim()) {
       Alert.alert("알림", "물품 이름을 입력해주세요.");
       return;
@@ -100,10 +100,14 @@ export const useShoppingManager = () => {
 
     try {
       const token = await AsyncStorage.getItem("userToken");
+      
+      // 수량이 입력 안 됐거나 이상한 값이면 기본값 1
+      const finalQty = itemQty && itemQty > 0 ? itemQty : 1; 
+
       const body = {
         itemName: itemNameText,
         note: itemNote,
-        desiredQty: 1,
+        desiredQty: finalQty, // 👈 [수정] 받아온 수량 적용 (기존 1 고정 삭제)
         unit: "개",
       };
 
