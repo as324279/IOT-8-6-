@@ -5,6 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useLocalSearchParams } from "expo-router"; // 👈 [수정] useLocalSearchParams 추가
 import * as Notifications from "expo-notifications";
 import { API_BASE_URL } from "../config/apiConfig";
+import * as ImagePicker from "expo-image-picker";
 
 export const useItemDetailLogic = (itemId) => {
   const router = useRouter();
@@ -112,6 +113,8 @@ export const useItemDetailLogic = (itemId) => {
     }
   };
 
+  
+
   // 3. 로컬 푸시 알림 트리거
   const triggerLocalNotification = async (name, currentQty) => {
     await Notifications.scheduleNotificationAsync({
@@ -127,13 +130,15 @@ export const useItemDetailLogic = (itemId) => {
   const handleSave = async () => {
     try {
       const token = await AsyncStorage.getItem("userToken");
+      
       const body = {
         name: itemName,
         quantity: quantity,
         expiryDate: expiryDate,
         minThreshold: isAlertOn ? alertQuantity : 0,
         isAlertOn: isAlertOn,
-        locationId: selectedLocation?.locationId, // 장소 변경 포함
+        locationId: selectedLocation?.locationId,
+        photoUrl: photoUrl, 
       };
 
       await axios.put(`${API_BASE_URL}/api/v1/items/${itemId}`, body, {
@@ -190,6 +195,55 @@ export const useItemDetailLogic = (itemId) => {
     return Platform.OS === 'android'; 
   };
 
+  // ▼▼▼ [추가] 이미지 업로드 및 변경 로직 ▼▼▼
+  const uploadImageToServer = async (uri) => {
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+      const fileName = uri.split("/").pop();
+      const formData = new FormData();
+      formData.append("file", { uri, type: "image/jpeg", name: fileName });
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/images/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("업로드 실패");
+      const data = await response.json();
+      return data.data.imageUrl;
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+  };
+
+  const handleUpdateImage = () => {
+    Alert.alert("사진 변경", "방법을 선택하세요.", [
+      { text: "취소", style: "cancel" },
+      { text: "카메라", onPress: () => pickImage("camera") },
+      { text: "앨범", onPress: () => pickImage("gallery") },
+    ]);
+  };
+
+  const pickImage = async (type) => {
+    const perm = type === "camera" 
+      ? await ImagePicker.requestCameraPermissionsAsync() 
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (!perm.granted) return Alert.alert("권한 필요", "카메라/앨범 권한이 필요합니다.");
+
+    const result = type === "camera"
+      ? await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.7 })
+      : await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.7 });
+
+    if (!result.canceled) {
+      const url = await uploadImageToServer(result.assets[0].uri);
+      if (url) setPhotoUrl(url); // 업로드 성공 시 화면 갱신
+    }
+  };
+  // ▲▲▲
+
   return {
     itemName, setItemName,
     quantity, setQuantity,
@@ -202,5 +256,6 @@ export const useItemDetailLogic = (itemId) => {
     handleSave,
     handleDelete,
     onChangeDate,
+    handleUpdateImage,
   };
 };

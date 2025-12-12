@@ -51,6 +51,7 @@ export default function ItemDetailScreen() {
     alertQuantity, setAlertQuantity,
     isAlertOn, photoUrl, setIsAlertOn,
     handleSave, handleDelete, onChangeDate, 
+    handleUpdateImage,
   } = useItemDetailLogic(itemId);
 
   // UI용 State (모달, 편집모드, 달력표시)
@@ -73,7 +74,10 @@ export default function ItemDetailScreen() {
       <ScrollView style={styles.container}>
         {/* 1. 이름 섹션 */}
         <View style={styles.profileSection}>
-          <TouchableOpacity style={styles.profileImageContainer}>
+          <TouchableOpacity 
+            style={styles.profileImageContainer}
+            onPress={handleUpdateImage} // 👈 클릭하면 사진 변경 기능 실행!
+          >
             {photoUrl ? (
               <Image 
                 source={{ uri: `${API_BASE_URL}${photoUrl}` }} 

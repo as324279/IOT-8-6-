@@ -11,8 +11,10 @@ import {
   Alert,
   Modal,
   Pressable,
+  Image, // [추가] 이미지 표시용
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context"; 
+import * as ImagePicker from "expo-image-picker"; // [추가] 이미지 선택 라이브러리
 
 import axios from "axios";
 import TopHeader from "../../components/TopHeader";
@@ -34,6 +36,7 @@ export default function MyPageScreen() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [nickname, setNickname] = useState("");
+  const [profileImage, setProfileImage] = useState(null); // [추가] 프로필 사진 상태
 
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
@@ -55,6 +58,12 @@ export default function MyPageScreen() {
         } else if (userData.nickname) {
           setNickname(userData.nickname);
         }
+        
+        // [추가] 프로필 사진 URL이 있으면 설정
+        // 백엔드 필드명이 photoUrl 이라고 가정합니다. (Item과 동일)
+        if (userData.profileImage) {  // 기존: userData.photoUrl
+          setProfileImage(userData.profileImage);
+        }
       } catch (error) {
         console.log("내 정보 불러오기 실패:", error);
       }
@@ -62,6 +71,111 @@ export default function MyPageScreen() {
 
     fetchMyInfo();
   }, [token]);
+
+  // [추가] 이미지 서버 업로드 함수 (InputScreen.js에서 가져옴)
+  const uploadImageToServer = async (uri) => {
+    try {
+      const fileName = uri.split("/").pop();
+      const fileType = "image/jpeg";
+
+      const formData = new FormData();
+      formData.append("file", {
+        uri,
+        type: fileType,
+        name: fileName,
+      });
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/images/upload`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          // multipart/form-data는 Content-Type 헤더를 직접 설정하지 않음 (fetch가 알아서 함)
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("이미지 업로드 실패");
+      }
+
+      const data = await response.json();
+      return data.data.imageUrl; // 서버가 돌려준 이미지 URL
+
+    } catch (error) {
+      console.log("이미지 업로드 오류:", error);
+      throw error;
+    }
+  };
+
+  // [추가] 프로필 사진 변경 핸들러
+  const handleUpdateProfileImage = () => {
+    Alert.alert("프로필 사진 변경", "사진을 가져올 방법을 선택하세요.", [
+      { text: "취소", style: "cancel" },
+      { 
+        text: "카메라 촬영", 
+        onPress: async () => {
+          const permission = await ImagePicker.requestCameraPermissionsAsync();
+          if (!permission.granted) {
+            Alert.alert("권한 필요", "카메라 권한이 필요합니다.");
+            return;
+          }
+          const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true, // 프로필이니 편집(크롭) 허용
+            aspect: [1, 1],      // 1:1 정사각형 비율
+            quality: 0.7,
+          });
+          processImageSelection(result);
+        }
+      },
+      { 
+        text: "앨범에서 선택", 
+        onPress: async () => {
+          const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (!permission.granted) {
+            Alert.alert("권한 필요", "앨범 접근 권한이 필요합니다.");
+            return;
+          }
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.7,
+          });
+          processImageSelection(result);
+        }
+      }
+    ]);
+  };
+
+  // [추가] 선택된 이미지 처리 및 서버 저장
+  const processImageSelection = async (result) => {
+    if (!result.canceled) {
+      try {
+        const uri = result.assets[0].uri;
+        
+        // 1. 이미지 서버에 업로드
+        const uploadedUrl = await uploadImageToServer(uri);
+        
+        // 2. 내 정보 업데이트 (PATCH)
+        await axios.patch(
+          `${API_BASE_URL}/api/v1/users/me`,
+          // ▼▼▼ [수정 2] 여기를 'profileImage'로 변경! ▼▼▼
+          { profileImage: uploadedUrl }, // 기존: photoUrl: uploadedUrl
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        // 3. 화면 갱신
+        setProfileImage(uploadedUrl);
+        Alert.alert("성공", "프로필 사진이 변경되었습니다.");
+
+      } catch (e) {
+        console.error("프로필 변경 실패", e);
+        Alert.alert("실패", "사진 등록에 실패했습니다.");
+      }
+    }
+  };
+
 
   // 2. 닉네임 변경
   const handleSaveNickname = async () => {
@@ -132,7 +246,6 @@ export default function MyPageScreen() {
   };
 
   return (
-    // ▼▼▼ [수정 2] edges={["top"]} 추가하여 상단 안전영역 확보
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top"]}>
       <TopHeader
         title="마이페이지"
@@ -143,12 +256,27 @@ export default function MyPageScreen() {
 
       <ScrollView style={styles.container}>
         <View style={styles.profileSection}>
-          <TouchableOpacity style={styles.profileImageContainer}>
-            <MaterialCommunityIcons
-              name="camera-outline"
-              size={40}
-              color="#8e8e8e"
-            />
+          
+          {/* [수정] 프로필 이미지 영역에 클릭 이벤트 추가 */}
+          <TouchableOpacity 
+            style={styles.profileImageContainer}
+            onPress={handleUpdateProfileImage} // 클릭 시 팝업
+          >
+            {profileImage ? (
+              // 사진이 있으면 이미지 표시
+              <Image 
+                source={{ uri: `${API_BASE_URL}${profileImage}` }} 
+                style={styles.fullImage}
+                resizeMode="cover"
+              />
+            ) : (
+              // 없으면 기존 아이콘 표시
+              <MaterialCommunityIcons
+                name="camera-outline"
+                size={40}
+                color="#8e8e8e"
+              />
+            )}
           </TouchableOpacity>
 
           {isEditing ? (
@@ -260,7 +388,6 @@ export default function MyPageScreen() {
 }
 
 const styles = StyleSheet.create({
-  // 스타일은 기존과 동일합니다.
   container: { flex: 1, backgroundColor: "#f9f9f9" },
   profileSection: {
     flexDirection: "row",
@@ -277,6 +404,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 20,
+    overflow: 'hidden',
+  },
+  // [추가] 이미지 꽉 채우기
+  fullImage: {
+    width: "100%",
+    height: "100%",
   },
   nickname: { fontSize: 22, fontWeight: "bold", flex: 1, marginHorizontal: 5 },
   nicknameInput: {
