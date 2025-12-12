@@ -4,13 +4,13 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { API_BASE_URL } from "../config/apiConfig"; // API URL 가져오기
 
-const ItemCard = ({ item, onUpdateQuantity }) => {
+const ItemCard = ({ item, onUpdateQuantity, groupId }) => {
   const router = useRouter();
 
   const handlePress = () => {
     router.push({
       pathname: "/itemDetail",
-      params: { itemId: item.itemId },
+      params: { itemId: item.itemId, group_id: groupId },
     });
   };
 

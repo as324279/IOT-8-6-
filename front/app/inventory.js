@@ -69,7 +69,7 @@ const InventoryScreen = () => {
 
     Alert.alert(
       "방 삭제", 
-      `'${category.name}'을(를) 삭제하시겠습니까?\n이 방에 들어있는 모든 물품도 함께 삭제됩니다.`,
+      `'${category.name}'을(를) 삭제하시겠습니까?`,
       [
         { text: "취소", style: "cancel" },
         { 
@@ -107,6 +107,7 @@ const InventoryScreen = () => {
                 key={item.itemId} 
                 item={item} 
                 onUpdateQuantity={updateQuantity} 
+                groupId={group_id}
               />
             ))
           )}
