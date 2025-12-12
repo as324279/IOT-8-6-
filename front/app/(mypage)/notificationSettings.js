@@ -1,7 +1,10 @@
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
-import { StyleSheet, Switch, Text, View, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // 추가
+import { StyleSheet, Switch, Text, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// 키 값 상수화
+export const NOTI_SETTINGS_KEY = 'notificationSettings';
 
 const SettingRow = ({ title, value, onValueChange, disabled = false }) => {
   return (
@@ -9,7 +12,7 @@ const SettingRow = ({ title, value, onValueChange, disabled = false }) => {
       <Text style={[styles.rowText, disabled && styles.disabledText]}>{title}</Text>
       <Switch
         trackColor={{ false: '#767577', true: '#53ACD9' }} 
-        thumbColor={value ? '#f4f3f4' : '#f4f3f4'}
+        thumbColor={'#f4f3f4'}
         ios_backgroundColor="#3e3e3e"
         onValueChange={onValueChange}
         value={value}
@@ -22,62 +25,68 @@ const SettingRow = ({ title, value, onValueChange, disabled = false }) => {
 export default function NotificationSettingsScreen() {
   const router = useRouter();
   
-  // 초기값은 모두 true로 설정
   const [isAllEnabled, setIsAllEnabled] = useState(true);
   const [isStockEnabled, setIsStockEnabled] = useState(true);
   const [isExpiryEnabled, setIsExpiryEnabled] = useState(true);
   const [isMemberEnabled, setIsMemberEnabled] = useState(true);
-  const [isPurchaseEnabled, setIsPurchaseEnabled] = useState(true); // [추가] 구매 완료
+  const [isPurchaseEnabled, setIsPurchaseEnabled] = useState(true);
 
-  // 1. 화면 진입 시 저장된 설정 불러오기
   useEffect(() => {
     loadSettings();
   }, []);
 
   const loadSettings = async () => {
     try {
-      const storedSettings = await AsyncStorage.getItem('notificationSettings');
+      const storedSettings = await AsyncStorage.getItem(NOTI_SETTINGS_KEY);
       if (storedSettings) {
         const settings = JSON.parse(storedSettings);
-        setIsAllEnabled(settings.all);
-        setIsStockEnabled(settings.stock);
-        setIsExpiryEnabled(settings.expiry);
-        setIsMemberEnabled(settings.member);
-        setIsPurchaseEnabled(settings.purchase ?? true); // 없으면 기본 true
+        setIsAllEnabled(settings.all ?? true);
+        setIsStockEnabled(settings.stock ?? true);
+        setIsExpiryEnabled(settings.expiry ?? true);
+        setIsMemberEnabled(settings.member ?? true);
+        setIsPurchaseEnabled(settings.purchase ?? true);
       }
     } catch (e) {
       console.log('설정 로드 실패', e);
     }
   };
 
-  // 2. 설정이 바뀔 때마다 저장하는 함수
   const saveSettings = async (newSettings) => {
     try {
-      await AsyncStorage.setItem('notificationSettings', JSON.stringify(newSettings));
+      await AsyncStorage.setItem(NOTI_SETTINGS_KEY, JSON.stringify(newSettings));
     } catch (e) {
       console.log('설정 저장 실패', e);
     }
   };
 
-  // 전체 알림 제어
+  // ▼▼▼ [수정] 전체 알림 제어 (켜면 다 켜지고, 끄면 다 꺼짐) ▼▼▼
   const toggleAllNotifications = (value) => {
+    // 1. 전체 스위치 상태 변경
     setIsAllEnabled(value);
-    // UI상으로는 개별 토글을 굳이 안 꺼도 되지만, 
-    // UX상 전체를 끄면 나머지도 꺼진 것처럼 보이게 하거나 유지할 수 있습니다.
-    // 여기서는 값 자체는 유지하되 UI에서 disabled 처리하는 방식을 씁니다.
-    // 저장
+
+    // 2. 하위 스위치들도 '전체'와 똑같은 값으로 변경
+    setIsStockEnabled(value);
+    setIsExpiryEnabled(value);
+    setIsMemberEnabled(value);
+    setIsPurchaseEnabled(value);
+
+    // 3. 변경된 모든 값을 저장
     saveSettings({
       all: value,
-      stock: isStockEnabled,
-      expiry: isExpiryEnabled,
-      member: isMemberEnabled,
-      purchase: isPurchaseEnabled,
+      stock: value,
+      expiry: value,
+      member: value,
+      purchase: value,
     });
   };
+  // ▲▲▲
 
-  // 개별 알림 제어 핸들러 생성기
+  // 개별 토글 핸들러
   const handleToggle = (setter, key, value) => {
     setter(value);
+    
+    // 주의: 개별 토글을 켰다고 해서 '전체 알림' 스위치까지 자동으로 켜지게 할지는 선택 사항입니다.
+    // 보통은 개별 동작은 독립적으로 두고, 전체 스위치는 '마스터 키' 역할만 합니다.
     saveSettings({
       all: isAllEnabled,
       stock: key === 'stock' ? value : isStockEnabled,
@@ -95,7 +104,6 @@ export default function NotificationSettingsScreen() {
           onValueChange={toggleAllNotifications}
         />
 
-        {/* 점선 구분선 */}
         <View style={styles.divider} />
 
         <SettingRow
@@ -116,7 +124,6 @@ export default function NotificationSettingsScreen() {
           onValueChange={(val) => handleToggle(setIsMemberEnabled, 'member', val)}
           disabled={!isAllEnabled} 
         />
-        {/* [추가] 구매 완료 알림 */}
         <SettingRow
           title="구매 완료 알림"
           value={isPurchaseEnabled}
@@ -128,32 +135,9 @@ export default function NotificationSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 20,
-    backgroundColor: 'white',
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    backgroundColor: '#fff',
-  },
-  rowText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  disabledText: {
-    color: '#aaa', // 비활성화 시 흐리게
-  },
-  divider: {
-    height: 1,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    borderStyle: 'dashed',
-    marginHorizontal: 20,
-    marginVertical: 10,
-  },
+  container: { flex: 1, paddingTop: 20, backgroundColor: 'white' },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 18, paddingHorizontal: 20, backgroundColor: '#fff' },
+  rowText: { fontSize: 16, color: '#333' },
+  disabledText: { color: '#aaa' },
+  divider: { height: 1, borderBottomWidth: 1, borderBottomColor: '#f0f0f0', borderStyle: 'dashed', marginHorizontal: 20, marginVertical: 10 },
 });
