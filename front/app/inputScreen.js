@@ -201,8 +201,8 @@ const InputScreen = () => {
 
               {/* 카메라 */}
               <TouchableOpacity onPress={() => cameraImage(idx)}>
-                  <Ionicons name="camera" size={30} color="black" />
-              </TouchableOpacity>
+                      <Ionicons name="camera" size={30} color="black" />
+                    </TouchableOpacity>
 
               {/* 수량 */}
               <View style={styles.mini}>
@@ -326,45 +326,38 @@ export default InputScreen;
 
 
 
-// ----------------------------
-// 스타일
-// ----------------------------
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: "#F8F9FB",
-    padding: 50,
-  },
+  flex: 1,
+  backgroundColor: "#F8F9FB",
+  paddingHorizontal: 16,
+  paddingTop: 20,
+},
 
-  scrollBox: {
-    flex: 1,
-    width: 290,
-    backgroundColor: "white",
-    borderRadius: 10,
-    padding: 15,
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: "#DDD",
-  },
+scrollBox: {
+  flex: 1,
+  backgroundColor: "white",
+  borderRadius: 16,
+  padding: 16,
+  marginTop: 10,
+},
+
 
   sectionTitle: {
-    fontWeight: "bold",
-    fontSize: 16,
-    color: "#444",
-    marginBottom: 8,
-    marginTop: 12,
-  },
+  fontWeight: "700",
+  fontSize: 17,
+  color: "#333",
+  marginBottom: 12,
+},
 
   inputContainer: {
-    backgroundColor: "#FFF",
-    padding: 15,
-    borderRadius: 16,
-    marginBottom: 15,
-    shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 2,
-  },
+  backgroundColor: "#FFF",
+  padding: 16,
+  borderRadius: 16,
+  marginBottom: 14,
+  borderWidth: 1,
+  borderColor: "#E6E8EB",
+},
 
   spec: {
     height: 1,
@@ -373,10 +366,10 @@ const styles = StyleSheet.create({
   },
 
   mini: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 12,          // 🔥 핵심
+},
 
   title: {
     fontSize: 15,
@@ -385,40 +378,34 @@ const styles = StyleSheet.create({
   },
 
   input: {
-    backgroundColor: "transparent",
-    fontSize: 15,
-    paddingVertical: 2,
-    width: "100%",
-  },
+  flex: 1,                     // 🔥 width 대신 flex
+  backgroundColor: "#F8F9FB",
+  borderRadius: 8,
+  fontSize: 15,
+  paddingVertical: 8,
+  paddingHorizontal: 12,
+},
 
   ButtonContainer: {
-    flexDirection: "row",
-  },
+  flexDirection: "row",
+  gap: 12,
+},
 
-  button1: {
-    backgroundColor: '#bee344',
-    paddingVertical: 15,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    marginTop: 20,
-    width: 120,
-    height: 45,
-    justifyContent: "center",
-    alignContent: "center",
-  },
+button1: {
+  flex: 1,
+  backgroundColor: "#E0E0E0",
+  height: 48,
+  borderRadius: 10,
+  justifyContent: "center",
+},
 
-  button: {
-    backgroundColor: '#5DADE2',
-    paddingVertical: 15,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    marginTop: 20,
-    width: 120,
-    height: 45,
-    marginLeft: 20,
-    justifyContent: "center",
-    alignContent: "center",
-  },
+button: {
+  flex: 1,
+  backgroundColor: "#5DADE2",
+  height: 48,
+  borderRadius: 10,
+  justifyContent: "center",
+},
 
   buttontext: {
     color: 'white',
@@ -485,6 +472,17 @@ confirmButton: {
 confirmText: {
   fontSize: 16,
   color: "#007AFF",
-}
+},
+cameraIcon: {
+  alignSelf: "flex-end",
+  marginBottom: 8,
+},
+cardHeader: {
+  flexDirection: "row",
+  justifyContent: "flex-end",
+  alignItems: "center",
+  gap: 14,
+  marginBottom: 10,
+},
 
 });

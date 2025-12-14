@@ -17,7 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker"; // [추가] 이미지 선택 라이브러리
 
 import axios from "axios";
-import TopHeader from "../../components/TopHeader";
+import TopHeader from "../../components/TopHeader2";
 import { useAuth } from "../../components/AuthProvider";
 import { API_BASE_URL } from "../../config/apiConfig";
 

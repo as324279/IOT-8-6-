@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import TopHeader from "../TopHeader"; // 경로 확인 필요 (components/TopHeader)
+import TopHeader from "../TopHeader2"; // 경로 확인 필요 (components/TopHeader)
 
 const RoomSelectView = ({ rooms, onSelect }) => {
   return (

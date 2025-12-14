@@ -7,6 +7,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { APIConnectionError } from 'openai';
 import { API_BASE_URL } from '../config/apiConfig';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useCameraPermissions } from "expo-camera";
 
 
 const RecieptScreen = () => {
@@ -234,7 +235,7 @@ const deleteItem = (index) => {
                     <Text style={styles.title}>유통기한</Text>
 
                     <TouchableOpacity
-                      style={[styles.input, { flexDirection: "row", alignItems: "center", paddingVertical: 10 }]}
+                      style={[styles.input, {  flexDirection: "row", alignItems: "center", paddingVertical: 10 }]}
                       onPress={() => setCurrentPickerIndex(idx)}
                     >
                       <Ionicons name="calendar-outline" size={20} color="#5AC8FA" style={{ marginRight: 6 }} />
@@ -297,135 +298,162 @@ const deleteItem = (index) => {
 export default RecieptScreen;
 
 const styles = StyleSheet.create({
-  
-  container:{
-    flex: 1,
-    backgroundColor: "#F8F9FB",
-    padding: 50,
+  container: {
+  flex: 1,
+  backgroundColor: "#F8F9FB",
+  paddingHorizontal: 16,
+  paddingTop: 20,
+},
 
-  },
-  addContainer:{},
-  addButton:{},
-   scrollBox: {
-     flex: 1,
-     width: 290,
-     height: 200,
-     backgroundColor: "white",
-     borderRadius: 10,
-     padding: 15,
-     marginTop: 10,
-     borderWidth: 1,
-     borderColor: "#DDD",
-   },
+scrollBox: {
+  flex: 1,
+  backgroundColor: "white",
+  borderRadius: 16,
+  padding: 16,
+  marginTop: 10,
+},
+
+
   sectionTitle: {
-    fontWeight: "bold",
-    fontSize: 16,
-    color: "#444",
-    marginBottom: 8,
-    marginTop: 12,
-  },
-  
-  label:{
-    fontSize:15,
-    color :"#777",
-    marginTop:20,
-    marginBottom:20
-  },
-  
-  inputContainer:{
-    backgroundColor: "#FFF",
-    padding: 15,
-    borderRadius: 16,
-    marginBottom: 15,
-    shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  spec:{
+  fontWeight: "700",
+  fontSize: 17,
+  color: "#333",
+  marginBottom: 12,
+},
+
+  inputContainer: {
+  backgroundColor: "#FFF",
+  padding: 16,
+  borderRadius: 16,
+  marginBottom: 14,
+  borderWidth: 1,
+  borderColor: "#E6E8EB",
+},
+
+  spec: {
     height: 1,
     backgroundColor: "#E8E8E8",
     marginVertical: 10,
   },
-  mini:{
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
+
+  mini: {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 12,          // 🔥 핵심
+},
+
   title: {
     fontSize: 15,
     fontWeight: "500",
     width: 80,
   },
-  input : {
-    backgroundColor: "transparent",
-    fontSize: 15,
-    paddingVertical: 2,
-    width:"100%",
 
-  },
-  ButtonContainer:{
-    flexDirection:"row"
-  },
-  button1:{
-  backgroundColor: '#bee344',
-    paddingVertical: 15,
-    paddingHorizontal:15,
-    borderRadius: 8,
-    marginTop:20,
-    width:120,
-    height:45,
-    justifyContent:"center",
-    alignContent:"center",  
-  },
-  button : {
-    backgroundColor: '#5DADE2',
-    paddingVertical: 15,
-    paddingHorizontal:15,
-    borderRadius: 8,
-    marginTop:20,
-    width:120,
-    height:45,
-    marginLeft:20,
-    justifyContent:"center",
-    alignContent:"center",
-  },
-  buttontext : {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-    textAlign:"center"
-  },
-  buttontext1:{
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-    textAlign:"center"
-  },
-  deleteButton: {
-  position: "absolute",
-  top: 10,
-  right: 10,
-  padding: 5,
-  zIndex: 10,
+  input: {
+  flex: 1,                     // 🔥 width 대신 flex
+  backgroundColor: "#F8F9FB",
+  borderRadius: 8,
+  fontSize: 15,
+  paddingVertical: 8,
+  paddingHorizontal: 12,
 },
-pickerWrapper: {
+
+  ButtonContainer: {
+  flexDirection: "row",
+  gap: 12,
+},
+
+button1: {
+  flex: 1,
+  backgroundColor: "#E0E0E0",
+  height: 48,
+  borderRadius: 10,
+  justifyContent: "center",
+},
+
+button: {
+  flex: 1,
+  backgroundColor: "#5DADE2",
+  height: 48,
+  borderRadius: 10,
+  justifyContent: "center",
+},
+
+  buttontext: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+    textAlign: "center",
+  },
+
+  buttontext1: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+    textAlign: "center",
+  },
+
+  deleteButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    padding: 5,
+    zIndex: 10,
+  },
+
+  // ---------------------
+  // Modal DatePicker 스타일
+  // ---------------------
+  modalBackdrop: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+
+  modalContainer: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+
+  modalCloseButton: {
+    marginTop: 10,
+    alignSelf: "center",
+  },
+  pickerWrapper: {
   position: "absolute",
   bottom: 0,
   left: 0,
   right: 0,
-  backgroundColor: "#fff",
-  padding: 12,
+  backgroundColor: "white",   // 🔥 필수
+  padding: 10,
   borderTopLeftRadius: 16,
   borderTopRightRadius: 16,
 },
+
 confirmButton: {
   padding: 15,
   alignItems: "center",
 },
+
 confirmText: {
   fontSize: 16,
   color: "#007AFF",
+},
+cameraIcon: {
+  alignSelf: "flex-end",
+  marginBottom: 8,
+},
+cardHeader: {
+  flexDirection: "row",
+  justifyContent: "flex-end",
+  alignItems: "center",
+  gap: 14,
+  marginBottom: 10,
 },
 
 });

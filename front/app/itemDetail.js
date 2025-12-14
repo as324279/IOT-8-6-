@@ -17,7 +17,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { API_BASE_URL } from "../config/apiConfig";
 
 // 분리한 컴포넌트 & 훅 가져오기
-import TopHeader from "../components/TopHeader";
+import TopHeader from "../components/TopHeader2";
 import LocationPickerModal from "../components/LocationPickerModal"; // 모달
 import { useItemDetailLogic } from "../hooks/useItemDetailLogic"; // 로직
 

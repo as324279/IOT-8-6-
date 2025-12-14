@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
 // 컴포넌트 & 스타일
-import TopHeader from "../../components/TopHeader";
+import TopHeader from "../../components/TopHeader2";
 import RoomList from "../../components/home/RoomList";
 import {
   InputModal,

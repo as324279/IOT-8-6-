@@ -5,7 +5,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 
-import TopHeader from "../components/TopHeader";
+import TopHeader from "../components/TopHeader2";
 import RoomTabs from "../components/room/RoomTabs";
 import ItemCard from "../components/ItemCard";
 import { useInventoryLogic } from "../hooks/useInventoryLogic";
